@@ -65,7 +65,7 @@ public partial class HistoryWindow : Window
                 TotalDurationMinutes = s.TotalDurationMinutes,
                 FocusedMinutes = s.FocusedMinutes,
                 Efficiency = s.TotalDurationMinutes > 0 ? (s.FocusedMinutes * 100 / s.TotalDurationMinutes) : 0,
-                FocusRecords = s.FocusRecords ?? new List<FocusRecord>(),
+                FocusSegments = s.FocusSegments ?? new List<FocusSegment>(),
                 EfficiencyColor = GetEfficiencyColor(s.TotalDurationMinutes > 0 ? (s.FocusedMinutes * 100 / s.TotalDurationMinutes) : 0)
             }).ToList();
 
@@ -86,12 +86,7 @@ public partial class HistoryWindow : Window
     {
         if (_currentSession == null) return null;
 
-        var focusedMinutes = _currentSession.FocusedMinutes;
-        if (_currentSession.FocusedMinutes == 0)
-        {
-            focusedMinutes = _currentSession.FocusRecords.Sum(r => r.MinutesFocused);
-        }
-
+        var focusedMinutes = _currentSession.FocusSegments.Sum(s => s.TotalSeconds / 60);
         var efficiency = _currentSession.TotalDurationMinutes > 0 ? (focusedMinutes * 100 / _currentSession.TotalDurationMinutes) : 0;
 
         return new SessionDisplay
@@ -100,7 +95,7 @@ public partial class HistoryWindow : Window
             TotalDurationMinutes = _currentSession.TotalDurationMinutes,
             FocusedMinutes = focusedMinutes,
             Efficiency = efficiency,
-            FocusRecords = _currentSession.FocusRecords ?? new List<FocusRecord>(),
+            FocusSegments = _currentSession.FocusSegments ?? new List<FocusSegment>(),
             EfficiencyColor = GetEfficiencyColor(efficiency),
             IsInProgress = true
         };
@@ -153,8 +148,12 @@ public class SessionDisplay
     public int TotalDurationMinutes { get; set; }
     public int FocusedMinutes { get; set; }
     public int Efficiency { get; set; }
-    public List<FocusRecord> FocusRecords { get; set; } = new();
-    public int DistraccionesCount => FocusRecords.Count;
+    public List<FocusSegment> FocusSegments { get; set; } = new();
+    public int SegmentosCount => FocusSegments.Count;
+    public bool HasSegments => FocusSegments.Count > 0;
+    public string SegmentosDetalle => FocusSegments.Count > 0 
+        ? string.Join(" | ", FocusSegments.Select((s, i) => $"#{i + 1}: {s.FormattedDuration}"))
+        : "Sin registros";
     public Brush EfficiencyColor { get; set; } = Brushes.White;
     public bool IsInProgress { get; set; }
 }

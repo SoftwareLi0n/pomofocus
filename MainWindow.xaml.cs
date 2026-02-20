@@ -21,6 +21,7 @@ public partial class MainWindow : Window
     private bool _isPaused;
     private bool _isDistracted;
     private bool _isBreakMode;
+    private bool _sessionSaved;
     private DateTime _sessionStart;
     private DateTime _focusSegmentStart;
     private int _currentFocusMinutes;
@@ -130,6 +131,22 @@ public partial class MainWindow : Window
         MainBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(40, 74, 222, 128));
     }
 
+    private void RecordFocusSegment()
+    {
+        if (_currentSession == null) return;
+        
+        var segment = new FocusSegment
+        {
+            StartTime = _focusSegmentStart,
+            EndTime = DateTime.Now
+        };
+        
+        if (segment.TotalSeconds >= 10)
+        {
+            _currentSession.FocusSegments.Add(segment);
+        }
+    }
+
     private void ResumeSession()
     {
         _focusSegmentStart = DateTime.Now;
@@ -149,16 +166,27 @@ public partial class MainWindow : Window
 
     private void PauseBtn_Click(object sender, RoutedEventArgs e)
     {
-        if (_isRunning && !_isDistracted)
-        {
-            _currentFocusMinutes += (int)(DateTime.Now - _focusSegmentStart).TotalMinutes;
-            _isRunning = false;
-            _isPaused = true;
-            _timer.Stop();
+        if (!_isRunning) return;
 
-            StartBtn.IsEnabled = true;
+        _isRunning = false;
+        _isPaused = true;
+        _timer.Stop();
+
+        StartBtn.IsEnabled = true;
+        PauseBtn.IsEnabled = false;
+
+        if (_isBreakMode)
+        {
+            StartBtn.Content = "Continuar Descanso";
+            StatusText.Text = "Descanso pausado";
+            TimerText.Foreground = Brushes.Orange;
+            MainBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(40, 251, 191, 36));
+        }
+        else if (!_isDistracted)
+        {
+            RecordFocusSegment();
+            _currentFocusMinutes = _currentSession?.FocusSegments.Sum(s => s.TotalSeconds / 60) ?? 0;
             StartBtn.Content = "Continuar";
-            PauseBtn.IsEnabled = false;
             DistractedBtn.IsEnabled = false;
             StatusText.Text = "Pausado";
             TimerText.Foreground = Brushes.Orange;
@@ -172,7 +200,9 @@ public partial class MainWindow : Window
         _isRunning = false;
         _isPaused = false;
         _isDistracted = false;
-        _remainingSeconds = _totalDurationMinutes * 60;
+        _isBreakMode = false;
+        _sessionSaved = false;
+        _remainingSeconds = _focusDurationMinutes * 60;
         _currentSession = null;
         _currentFocusMinutes = 0;
 
@@ -192,23 +222,8 @@ public partial class MainWindow : Window
     {
         if (!_isRunning) return;
 
-        var focusedDuration = DateTime.Now - _focusSegmentStart;
-        var focusedMinutes = (int)focusedDuration.TotalMinutes;
-        
-        if (focusedMinutes > 0 || focusedDuration.TotalSeconds >= 30)
-        {
-            _currentFocusMinutes += Math.Max(1, focusedMinutes);
-            
-            if (_currentSession != null)
-            {
-                _currentSession.FocusRecords.Add(new FocusRecord
-                {
-                    Timestamp = DateTime.Now,
-                    MinutesFocused = Math.Max(1, focusedMinutes),
-                    Note = "Distracción registrada"
-                });
-            }
-        }
+        RecordFocusSegment();
+        _currentFocusMinutes = _currentSession?.FocusSegments.Sum(s => s.TotalSeconds / 60) ?? 0;
 
         _timer.Stop();
         _isRunning = false;
@@ -246,46 +261,145 @@ public partial class MainWindow : Window
         {
             if (!_isDistracted)
             {
-                var finalFocusMinutes = (int)(DateTime.Now - _focusSegmentStart).TotalMinutes;
-                _currentFocusMinutes += finalFocusMinutes;
+                RecordFocusSegment();
             }
             
             _currentSession.EndTime = DateTime.Now;
-            _currentSession.FocusedMinutes = _currentFocusMinutes;
+            _currentSession.FocusedMinutes = _currentSession.FocusSegments.Sum(s => s.TotalSeconds / 60);
             
             _sessionService.AddSession(_currentSession);
+            _sessionSaved = true;
         }
 
-        var efficiency = _totalDurationMinutes > 0 ? (_currentFocusMinutes * 100 / _totalDurationMinutes) : 0;
+        var adWindow = new AdWindow(ShowSessionCompleteMessage)
+        {
+            Owner = this,
+            Topmost = true
+        };
+        adWindow.ShowDialog();
+    }
+
+    private void ShowSessionCompleteMessage()
+    {
+        var focusedMinutes = _currentSession?.FocusSegments.Sum(s => s.TotalSeconds / 60) ?? 0;
+        var efficiency = _focusDurationMinutes > 0 ? (focusedMinutes * 100 / _focusDurationMinutes) : 0;
+
+        var result = MessageBox.Show(
+            $"Sesion completada!\n\nTiempo total: {_focusDurationMinutes} min\nConcentrado: {focusedMinutes} min\nEficiencia: {efficiency}%\n\n¿Iniciar descanso de {_breakDurationMinutes} min?",
+            "Sesion Finalizada",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Information
+        );
+
+        if (result == MessageBoxResult.Yes)
+        {
+            StartBreak();
+        }
+        else
+        {
+            ResetToFocusMode();
+        }
+    }
+
+    private void StartBreak()
+    {
+        _isBreakMode = true;
+        _isRunning = false;
+        _isPaused = true;
+        _isDistracted = false;
+        _remainingSeconds = _breakDurationMinutes * 60;
+        
+        UpdateTimerDisplay();
+        
+        StartBtn.IsEnabled = true;
+        StartBtn.Content = "Iniciar Descanso";
+        PauseBtn.IsEnabled = false;
+        DistractedBtn.IsEnabled = false;
+        DistractedBtn.Visibility = Visibility.Collapsed;
+        RefocusBtn.Visibility = Visibility.Collapsed;
+        StatusText.Text = $"Tiempo de descanso: {_breakDurationMinutes} min";
+        TimerText.Foreground = Brushes.Gold;
+        MainBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(40, 251, 191, 36));
+    }
+
+    private void ResumeBreak()
+    {
+        _isRunning = true;
+        _isPaused = false;
+        _timer.Start();
+
+        StartBtn.IsEnabled = false;
+        PauseBtn.IsEnabled = true;
+        StatusText.Text = "Descansando...";
+        TimerText.Foreground = Brushes.Gold;
+        MainBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(40, 251, 191, 36));
+    }
+
+    private void CompleteBreak()
+    {
+        _timer.Stop();
+        _isRunning = false;
 
         MessageBox.Show(
-            $"Sesion completada!\n\nTiempo total: {_totalDurationMinutes} min\nConcentrado: {_currentFocusMinutes} min\nEficiencia: {efficiency}%",
-            "Sesion Finalizada",
+            "Descanso completado!\n\nTiempo de volver a concentrarse.",
+            "Descanso Finalizado",
             MessageBoxButton.OK,
             MessageBoxImage.Information
         );
 
-        ResetBtn_Click(this, new RoutedEventArgs());
+        ResetToFocusMode();
+    }
+
+    private void ResetToFocusMode()
+    {
+        _isBreakMode = false;
+        _isRunning = false;
+        _isPaused = false;
+        _isDistracted = false;
+        _sessionSaved = false;
+        _remainingSeconds = _focusDurationMinutes * 60;
+        _currentSession = null;
+        _currentFocusMinutes = 0;
+
+        UpdateTimerDisplay();
+        StartBtn.IsEnabled = true;
+        StartBtn.Content = "Iniciar";
+        PauseBtn.IsEnabled = false;
+        DistractedBtn.IsEnabled = false;
+        DistractedBtn.Visibility = Visibility.Visible;
+        RefocusBtn.Visibility = Visibility.Collapsed;
+        StatusText.Text = "Listo para comenzar";
+        TimerText.Foreground = Brushes.Cyan;
+        MainBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(21, 255, 255, 255));
     }
 
     private void HistoryBtn_Click(object sender, RoutedEventArgs e)
     {
         Session? sessionForReport = null;
         
-        if (_currentSession != null && (_isRunning || _isPaused || _isDistracted))
+        if (_currentSession != null && !_sessionSaved && (_isRunning || _isPaused || _isDistracted))
         {
-            var focusedSoFar = _currentFocusMinutes;
+            var segments = new List<FocusSegment>(_currentSession.FocusSegments);
+            
             if (!_isDistracted && _isRunning)
             {
-                focusedSoFar += (int)(DateTime.Now - _focusSegmentStart).TotalMinutes;
+                var currentSegment = new FocusSegment
+                {
+                    StartTime = _focusSegmentStart,
+                    EndTime = DateTime.Now
+                };
+                if (currentSegment.TotalSeconds >= 10)
+                {
+                    segments.Add(currentSegment);
+                }
             }
             
             sessionForReport = new Session
             {
                 StartTime = _currentSession.StartTime,
-                TotalDurationMinutes = _totalDurationMinutes,
-                FocusedMinutes = focusedSoFar,
-                FocusRecords = new List<FocusRecord>(_currentSession.FocusRecords)
+                TotalDurationMinutes = _focusDurationMinutes,
+                FocusedMinutes = segments.Sum(s => s.TotalSeconds / 60),
+                FocusSegments = segments
             };
         }
         

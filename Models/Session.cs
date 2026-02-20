@@ -1,10 +1,21 @@
 namespace FocusPomodoro.Models;
 
-public class FocusRecord
+public class FocusSegment
 {
-    public DateTime Timestamp { get; set; }
-    public int MinutesFocused { get; set; }
-    public string Note { get; set; } = "";
+    public DateTime StartTime { get; set; }
+    public DateTime EndTime { get; set; }
+    public int TotalSeconds => (int)(EndTime - StartTime).TotalSeconds;
+    public string FormattedDuration
+    {
+        get
+        {
+            var mins = TotalSeconds / 60;
+            var secs = TotalSeconds % 60;
+            if (secs > 0)
+                return $"{mins} min {secs} seg";
+            return $"{mins} min";
+        }
+    }
 }
 
 public class Session
@@ -14,7 +25,7 @@ public class Session
     public DateTime EndTime { get; set; }
     public int TotalDurationMinutes { get; set; }
     public int FocusedMinutes { get; set; }
-    public List<FocusRecord> FocusRecords { get; set; } = new();
+    public List<FocusSegment> FocusSegments { get; set; } = new();
     public string? TaskName { get; set; }
 }
 

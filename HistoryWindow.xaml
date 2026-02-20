@@ -135,36 +135,53 @@
                                     </Style.Triggers>
                                 </Style>
                             </Border.Style>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
 
-                                <StackPanel Grid.Column="0">
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="{Binding StartTime, StringFormat='{}{0:dd/MM/yyyy HH:mm}'}" 
-                                                   FontSize="12" Foreground="#888"/>
-                                        <TextBlock Text=" (En progreso)" FontSize="12" Foreground="#00d9ff" FontWeight="Bold"
-                                                   Visibility="{Binding IsInProgress, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                    <StackPanel Grid.Column="0">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding StartTime, StringFormat='{}{0:dd/MM/yyyy HH:mm}'}" 
+                                                       FontSize="12" Foreground="#888"/>
+                                            <TextBlock Text=" (En progreso)" FontSize="12" Foreground="#00d9ff" FontWeight="Bold"
+                                                       Visibility="{Binding IsInProgress, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                                            <TextBlock Text="Duracion: " FontSize="11" Foreground="#888"/>
+                                            <TextBlock Text="{Binding TotalDurationMinutes}" FontSize="11" Foreground="#fff"/>
+                                            <TextBlock Text=" min" FontSize="11" Foreground="#888"/>
+                                            <TextBlock Text=" | Concentrado: " FontSize="11" Foreground="#888" Margin="10,0,0,0"/>
+                                            <TextBlock Text="{Binding FocusedMinutes}" FontSize="11" Foreground="#4ade80"/>
+                                            <TextBlock Text=" min" FontSize="11" Foreground="#888"/>
+                                        </StackPanel>
                                     </StackPanel>
-                                    <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
-                                        <TextBlock Text="Duracion: " FontSize="11" Foreground="#888"/>
-                                        <TextBlock Text="{Binding TotalDurationMinutes}" FontSize="11" Foreground="#fff"/>
-                                        <TextBlock Text=" min" FontSize="11" Foreground="#888"/>
-                                        <TextBlock Text=" | Concentrado: " FontSize="11" Foreground="#888" Margin="10,0,0,0"/>
-                                        <TextBlock Text="{Binding FocusedMinutes}" FontSize="11" Foreground="#4ade80"/>
-                                        <TextBlock Text=" min" FontSize="11" Foreground="#888"/>
-                                    </StackPanel>
-                                    <TextBlock FontSize="10" Foreground="#fbbf24" Margin="0,3,0,0" Text="{Binding DistraccionesCount, StringFormat='Distracciones: {0}', Mode=OneWay}"/>
-                                </StackPanel>
 
-                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding Efficiency, StringFormat='{}{0}%'}" 
-                                               FontSize="16" FontWeight="Bold"
-                                               Foreground="{Binding EfficiencyColor}"/>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Efficiency, StringFormat='{}{0}%'}" 
+                                                   FontSize="16" FontWeight="Bold"
+                                                   Foreground="{Binding EfficiencyColor}"/>
+                                    </StackPanel>
+                                </Grid>
+                                
+                                <StackPanel Margin="0,8,0,0" Visibility="{Binding HasSegments, Converter={StaticResource BoolToVisibilityConverter}}">
+                                    <TextBlock Text="Segmentos de concentracion:" FontSize="10" Foreground="#00d9ff" FontWeight="Bold"/>
+                                    <ItemsControl ItemsSource="{Binding FocusSegments}" Margin="5,3,0,0">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                                    <TextBlock FontSize="10" Foreground="#aaa">
+                                                        <Run Text="- Concentrado: "/>
+                                                        <Run Text="{Binding FormattedDuration, Mode=OneWay}" Foreground="#4ade80"/>
+                                                    </TextBlock>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
                                 </StackPanel>
-                            </Grid>
+                            </StackPanel>
                         </Border>
                     </DataTemplate>
                 </ListView.ItemTemplate>
