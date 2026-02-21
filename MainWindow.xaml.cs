@@ -126,7 +126,7 @@ public partial class MainWindow : Window
         DistractedBtn.IsEnabled = true;
         DistractedBtn.Visibility = Visibility.Visible;
         RefocusBtn.Visibility = Visibility.Collapsed;
-        StatusText.Text = "Concentrado...";
+        StatusText.Text = "Focusing...";
         TimerText.Foreground = Brushes.LightGreen;
         MainBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(40, 74, 222, 128));
     }
@@ -159,7 +159,7 @@ public partial class MainWindow : Window
         DistractedBtn.IsEnabled = true;
         DistractedBtn.Visibility = Visibility.Visible;
         RefocusBtn.Visibility = Visibility.Collapsed;
-        StatusText.Text = "Concentrado...";
+        StatusText.Text = "Focusing...";
         TimerText.Foreground = Brushes.LightGreen;
         MainBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(40, 74, 222, 128));
     }
@@ -177,8 +177,8 @@ public partial class MainWindow : Window
 
         if (_isBreakMode)
         {
-            StartBtn.Content = "Continuar Descanso";
-            StatusText.Text = "Descanso pausado";
+            SetStartButtonContent("▶", "Resume Break");
+            StatusText.Text = "Break paused";
             TimerText.Foreground = Brushes.Orange;
             MainBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(40, 251, 191, 36));
         }
@@ -186,9 +186,9 @@ public partial class MainWindow : Window
         {
             RecordFocusSegment();
             _currentFocusMinutes = _currentSession?.FocusSegments.Sum(s => s.TotalSeconds / 60) ?? 0;
-            StartBtn.Content = "Continuar";
+            SetStartButtonContent("▶", "Resume");
             DistractedBtn.IsEnabled = false;
-            StatusText.Text = "Pausado";
+            StatusText.Text = "Paused";
             TimerText.Foreground = Brushes.Orange;
             MainBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(40, 251, 191, 36));
         }
@@ -208,12 +208,12 @@ public partial class MainWindow : Window
 
         UpdateTimerDisplay();
         StartBtn.IsEnabled = true;
-        StartBtn.Content = "Iniciar";
+        SetStartButtonContent("▶", "Start");
         PauseBtn.IsEnabled = false;
         DistractedBtn.IsEnabled = false;
         DistractedBtn.Visibility = Visibility.Visible;
         RefocusBtn.Visibility = Visibility.Collapsed;
-        StatusText.Text = "Listo para comenzar";
+        StatusText.Text = "Ready to focus";
         TimerText.Foreground = Brushes.Cyan;
         MainBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(21, 255, 255, 255));
     }
@@ -232,7 +232,7 @@ public partial class MainWindow : Window
         DistractedBtn.Visibility = Visibility.Collapsed;
         RefocusBtn.Visibility = Visibility.Visible;
         PauseBtn.IsEnabled = false;
-        StatusText.Text = $"Distraido - Concentrado: {_currentFocusMinutes} min";
+        StatusText.Text = $"Distracted - Focused: {_currentFocusMinutes} min";
         TimerText.Foreground = Brushes.Red;
         MainBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(60, 255, 71, 87));
     }
@@ -247,7 +247,7 @@ public partial class MainWindow : Window
         DistractedBtn.Visibility = Visibility.Visible;
         RefocusBtn.Visibility = Visibility.Collapsed;
         PauseBtn.IsEnabled = true;
-        StatusText.Text = "Concentrado...";
+        StatusText.Text = "Focusing...";
         TimerText.Foreground = Brushes.LightGreen;
         MainBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(40, 74, 222, 128));
     }
@@ -271,68 +271,26 @@ public partial class MainWindow : Window
             _sessionSaved = true;
         }
 
-        var adWindow = new AdWindow(ShowSessionCompleteMessage)
-        {
-            Owner = this,
-            Topmost = true
-        };
-        adWindow.ShowDialog();
+        System.Media.SystemSounds.Exclamation.Play();
+        
+        var breakWindow = new BreakWindow(_breakDurationMinutes, OnBreakComplete, OnBreakSkipped);
+        breakWindow.Show();
     }
 
-    private void ShowSessionCompleteMessage()
+    private void OnBreakComplete()
     {
-        var focusedMinutes = _currentSession?.FocusSegments.Sum(s => s.TotalSeconds / 60) ?? 0;
-        var efficiency = _focusDurationMinutes > 0 ? (focusedMinutes * 100 / _focusDurationMinutes) : 0;
-
-        var result = MessageBox.Show(
-            $"Sesion completada!\n\nTiempo total: {_focusDurationMinutes} min\nConcentrado: {focusedMinutes} min\nEficiencia: {efficiency}%\n\n¿Iniciar descanso de {_breakDurationMinutes} min?",
-            "Sesion Finalizada",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Information
-        );
-
-        if (result == MessageBoxResult.Yes)
-        {
-            StartBreak();
-        }
-        else
+        Dispatcher.Invoke(() =>
         {
             ResetToFocusMode();
-        }
+        });
     }
 
-    private void StartBreak()
+    private void OnBreakSkipped()
     {
-        _isBreakMode = true;
-        _isRunning = false;
-        _isPaused = true;
-        _isDistracted = false;
-        _remainingSeconds = _breakDurationMinutes * 60;
-        
-        UpdateTimerDisplay();
-        
-        StartBtn.IsEnabled = true;
-        StartBtn.Content = "Iniciar Descanso";
-        PauseBtn.IsEnabled = false;
-        DistractedBtn.IsEnabled = false;
-        DistractedBtn.Visibility = Visibility.Collapsed;
-        RefocusBtn.Visibility = Visibility.Collapsed;
-        StatusText.Text = $"Tiempo de descanso: {_breakDurationMinutes} min";
-        TimerText.Foreground = Brushes.Gold;
-        MainBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(40, 251, 191, 36));
-    }
-
-    private void ResumeBreak()
-    {
-        _isRunning = true;
-        _isPaused = false;
-        _timer.Start();
-
-        StartBtn.IsEnabled = false;
-        PauseBtn.IsEnabled = true;
-        StatusText.Text = "Descansando...";
-        TimerText.Foreground = Brushes.Gold;
-        MainBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(40, 251, 191, 36));
+        Dispatcher.Invoke(() =>
+        {
+            ResetToFocusMode();
+        });
     }
 
     private void CompleteBreak()
@@ -340,13 +298,7 @@ public partial class MainWindow : Window
         _timer.Stop();
         _isRunning = false;
 
-        MessageBox.Show(
-            "Descanso completado!\n\nTiempo de volver a concentrarse.",
-            "Descanso Finalizado",
-            MessageBoxButton.OK,
-            MessageBoxImage.Information
-        );
-
+        System.Media.SystemSounds.Asterisk.Play();
         ResetToFocusMode();
     }
 
@@ -363,14 +315,40 @@ public partial class MainWindow : Window
 
         UpdateTimerDisplay();
         StartBtn.IsEnabled = true;
-        StartBtn.Content = "Iniciar";
+        SetStartButtonContent("▶", "Start");
         PauseBtn.IsEnabled = false;
         DistractedBtn.IsEnabled = false;
         DistractedBtn.Visibility = Visibility.Visible;
         RefocusBtn.Visibility = Visibility.Collapsed;
-        StatusText.Text = "Listo para comenzar";
+        StatusText.Text = "Ready to focus";
         TimerText.Foreground = Brushes.Cyan;
         MainBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(21, 255, 255, 255));
+    }
+
+    private void ResumeBreak()
+    {
+        _isRunning = true;
+        _isPaused = false;
+        _timer.Start();
+
+        StartBtn.IsEnabled = false;
+        PauseBtn.IsEnabled = true;
+        StatusText.Text = "On break...";
+        TimerText.Foreground = Brushes.Gold;
+        MainBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(40, 251, 191, 36));
+    }
+
+    private void SetStartButtonContent(string icon, string text)
+    {
+        StartBtn.Content = new System.Windows.Controls.StackPanel
+        {
+            Orientation = System.Windows.Controls.Orientation.Horizontal,
+            Children =
+            {
+                new System.Windows.Controls.TextBlock { Text = icon, Margin = new Thickness(0, 0, 5, 0), FontSize = 10 },
+                new System.Windows.Controls.TextBlock { Text = text }
+            }
+        };
     }
 
     private void HistoryBtn_Click(object sender, RoutedEventArgs e)
@@ -431,8 +409,8 @@ public partial class MainWindow : Window
         if (_isRunning || _isDistracted)
         {
             var result = MessageBox.Show(
-                "Hay una sesion en curso. ¿Deseas guardar el progreso antes de cerrar?",
-                "Sesion en curso",
+                "A session is in progress. Do you want to save progress before closing?",
+                "Session in progress",
                 MessageBoxButton.YesNoCancel,
                 MessageBoxImage.Warning
             );

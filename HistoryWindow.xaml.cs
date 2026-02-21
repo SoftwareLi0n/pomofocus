@@ -51,7 +51,6 @@ public partial class HistoryWindow : Window
             var todayEfficiency = todayTotalDuration > 0 ? (todayTotalFocused * 100 / todayTotalDuration) : 0;
 
             TodaySessionsText.Text = todayCount.ToString();
-            TodayFocusedText.Text = $"{todayTotalFocused}";
             TodayEfficiencyText.Text = $"{todayEfficiency}%";
 
             var weekSummary = _sessionService.GetDailySummary(7);

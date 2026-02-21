@@ -92,7 +92,6 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="0">
@@ -102,12 +101,6 @@
                     </StackPanel>
 
                     <StackPanel Grid.Column="1">
-                        <TextBlock Text="Min. Concentrado" FontSize="10" Foreground="#888"/>
-                        <TextBlock x:Name="TodayFocusedText" Text="0" 
-                                   FontSize="20" FontWeight="Bold" Foreground="#4ade80"/>
-                    </StackPanel>
-
-                    <StackPanel Grid.Column="2">
                         <TextBlock Text="Eficiencia" FontSize="10" Foreground="#888"/>
                         <TextBlock x:Name="TodayEfficiencyText" Text="0%" 
                                    FontSize="20" FontWeight="Bold" Foreground="#fbbf24"/>
@@ -153,9 +146,6 @@
                                             <TextBlock Text="Duracion: " FontSize="11" Foreground="#888"/>
                                             <TextBlock Text="{Binding TotalDurationMinutes}" FontSize="11" Foreground="#fff"/>
                                             <TextBlock Text=" min" FontSize="11" Foreground="#888"/>
-                                            <TextBlock Text=" | Concentrado: " FontSize="11" Foreground="#888" Margin="10,0,0,0"/>
-                                            <TextBlock Text="{Binding FocusedMinutes}" FontSize="11" Foreground="#4ade80"/>
-                                            <TextBlock Text=" min" FontSize="11" Foreground="#888"/>
                                         </StackPanel>
                                     </StackPanel>
 
@@ -167,13 +157,13 @@
                                 </Grid>
                                 
                                 <StackPanel Margin="0,8,0,0" Visibility="{Binding HasSegments, Converter={StaticResource BoolToVisibilityConverter}}">
-                                    <TextBlock Text="Segmentos de concentracion:" FontSize="10" Foreground="#00d9ff" FontWeight="Bold"/>
+                                    <TextBlock Text="Progreso de concentracion:" FontSize="10" Foreground="#00d9ff" FontWeight="Bold"/>
                                     <ItemsControl ItemsSource="{Binding FocusSegments}" Margin="5,3,0,0">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
                                                 <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
                                                     <TextBlock FontSize="10" Foreground="#aaa">
-                                                        <Run Text="- Concentrado: "/>
+                                                        <Run Text="- "/>
                                                         <Run Text="{Binding FormattedDuration, Mode=OneWay}" Foreground="#4ade80"/>
                                                     </TextBlock>
                                                 </StackPanel>

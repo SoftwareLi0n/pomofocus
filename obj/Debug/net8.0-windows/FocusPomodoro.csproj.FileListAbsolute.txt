@@ -22,5 +22,5 @@ D:\projects\Focus\FocusPomodoro\obj\Debug\net8.0-windows\ref\FocusPomodoro.dll
 D:\projects\Focus\FocusPomodoro\obj\Debug\net8.0-windows\SettingsWindow.baml
 D:\projects\Focus\FocusPomodoro\obj\Debug\net8.0-windows\SettingsWindow.g.cs
 D:\projects\Focus\FocusPomodoro\obj\Debug\net8.0-windows\FocusPomodoro.sourcelink.json
-D:\projects\Focus\FocusPomodoro\obj\Debug\net8.0-windows\AdWindow.baml
-D:\projects\Focus\FocusPomodoro\obj\Debug\net8.0-windows\AdWindow.g.cs
+D:\projects\Focus\FocusPomodoro\obj\Debug\net8.0-windows\BreakWindow.baml
+D:\projects\Focus\FocusPomodoro\obj\Debug\net8.0-windows\BreakWindow.g.cs

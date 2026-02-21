@@ -51,8 +51,10 @@
                     <ControlTemplate TargetType="Button">
                         <Border Background="{TemplateBinding Background}" 
                                 CornerRadius="8" Padding="8,5">
-                            <ContentPresenter HorizontalAlignment="Center" 
-                                            VerticalAlignment="Center"/>
+                            <StackPanel Orientation="Horizontal">
+                                <ContentPresenter HorizontalAlignment="Center" 
+                                                VerticalAlignment="Center"/>
+                            </StackPanel>
                         </Border>
                     </ControlTemplate>
                 </Setter.Value>
@@ -71,7 +73,7 @@
             <Setter Property="Background" Value="#ff475790"/>
             <Setter Property="Foreground" Value="#fff"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontSize" Value="11"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Height" Value="35"/>
             <Setter Property="Margin" Value="0,0,5,0"/>
@@ -100,7 +102,7 @@
             <Setter Property="Background" Value="#4ade8090"/>
             <Setter Property="Foreground" Value="#fff"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontSize" Value="11"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Height" Value="35"/>
             <Setter Property="Margin" Value="0,0,5,0"/>
@@ -198,7 +200,7 @@
                        HorizontalAlignment="Center"
                        FontFamily="Consolas"/>
 
-            <TextBlock Grid.Row="2" x:Name="StatusText" Text="Listo para comenzar" 
+            <TextBlock Grid.Row="2" x:Name="StatusText" Text="Ready to focus" 
                        FontSize="12" Foreground="#aaa" 
                        HorizontalAlignment="Center" Margin="0,5,0,10"/>
 
@@ -209,13 +211,28 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <Button Grid.Column="0" x:Name="StartBtn" Content="Iniciar" 
-                        Click="StartBtn_Click" Style="{StaticResource ActionButtonStyle}"/>
-                <Button Grid.Column="1" x:Name="PauseBtn" Content="Pausar" 
+                <Button Grid.Column="0" x:Name="StartBtn" 
+                        Click="StartBtn_Click" Style="{StaticResource ActionButtonStyle}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="▶" Margin="0,0,5,0" FontSize="10"/>
+                        <TextBlock Text="Start"/>
+                    </StackPanel>
+                </Button>
+                <Button Grid.Column="1" x:Name="PauseBtn" 
                         Click="PauseBtn_Click" IsEnabled="False" 
-                        Style="{StaticResource ActionButtonStyle}"/>
-                <Button Grid.Column="2" x:Name="ResetBtn" Content="Reset" 
-                        Click="ResetBtn_Click" Style="{StaticResource ActionButtonStyle}"/>
+                        Style="{StaticResource ActionButtonStyle}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="⏸" Margin="0,0,5,0" FontSize="10"/>
+                        <TextBlock Text="Pause"/>
+                    </StackPanel>
+                </Button>
+                <Button Grid.Column="2" x:Name="ResetBtn" 
+                        Click="ResetBtn_Click" Style="{StaticResource ActionButtonStyle}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="↺" Margin="0,0,5,0" FontSize="12"/>
+                        <TextBlock Text="Reset"/>
+                    </StackPanel>
+                </Button>
             </Grid>
 
             <Grid Grid.Row="4">
@@ -226,17 +243,25 @@
                 </Grid.ColumnDefinitions>
 
                 <Button Grid.Column="0" x:Name="DistractedBtn" 
-                        Content="Me distraje" 
                         Click="DistractedBtn_Click" 
                         IsEnabled="False"
                         Visibility="Visible"
-                        Style="{StaticResource DistractedButtonStyle}"/>
+                        Style="{StaticResource DistractedButtonStyle}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="😰" Margin="0,0,5,0"/>
+                        <TextBlock Text="Got distracted"/>
+                    </StackPanel>
+                </Button>
 
                 <Button Grid.Column="0" x:Name="RefocusBtn" 
-                        Content="Volver a concentrarme" 
                         Click="RefocusBtn_Click" 
                         Visibility="Collapsed"
-                        Style="{StaticResource RefocusButtonStyle}"/>
+                        Style="{StaticResource RefocusButtonStyle}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="🎯" Margin="0,0,5,0"/>
+                        <TextBlock Text="Refocus"/>
+                    </StackPanel>
+                </Button>
 
                 <Button Grid.Column="1" x:Name="SettingsBtn" 
                         Content="⚙" 
