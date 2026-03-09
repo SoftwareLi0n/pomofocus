@@ -24,3 +24,15 @@ D:\projects\Focus\FocusPomodoro\obj\Debug\net8.0-windows\SettingsWindow.g.cs
 D:\projects\Focus\FocusPomodoro\obj\Debug\net8.0-windows\FocusPomodoro.sourcelink.json
 D:\projects\Focus\FocusPomodoro\obj\Debug\net8.0-windows\BreakWindow.baml
 D:\projects\Focus\FocusPomodoro\obj\Debug\net8.0-windows\BreakWindow.g.cs
+D:\projects\Focus\FocusPomodoro\bin\Debug\net8.0-windows\runtimes\win-x86\native\WebView2Loader.dll
+D:\projects\Focus\FocusPomodoro\bin\Debug\net8.0-windows\runtimes\win-x64\native\WebView2Loader.dll
+D:\projects\Focus\FocusPomodoro\bin\Debug\net8.0-windows\runtimes\win-arm64\native\WebView2Loader.dll
+D:\projects\Focus\FocusPomodoro\bin\Debug\net8.0-windows\Microsoft.Web.WebView2.Core.dll
+D:\projects\Focus\FocusPomodoro\bin\Debug\net8.0-windows\Microsoft.Web.WebView2.WinForms.dll
+D:\projects\Focus\FocusPomodoro\bin\Debug\net8.0-windows\Microsoft.Web.WebView2.Wpf.dll
+D:\projects\Focus\FocusPomodoro\bin\Debug\net8.0-windows\Microsoft.Web.WebView2.Core.xml
+D:\projects\Focus\FocusPomodoro\bin\Debug\net8.0-windows\Microsoft.Web.WebView2.WinForms.xml
+D:\projects\Focus\FocusPomodoro\bin\Debug\net8.0-windows\Microsoft.Web.WebView2.Wpf.xml
+D:\projects\Focus\FocusPomodoro\obj\Debug\net8.0-windows\FocusPomodoro.csproj.AssemblyReference.cache
+D:\projects\Focus\FocusPomodoro\obj\Debug\net8.0-windows\FocusPomodoro_Content.g.cs
+D:\projects\Focus\FocusPomodoro\obj\Debug\net8.0-windows\FocusPom.A47DF0DF.Up2Date

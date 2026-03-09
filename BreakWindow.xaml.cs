@@ -1,11 +1,13 @@
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Controls;
 using System.Windows.Threading;
+using Microsoft.Web.WebView2.Core;
 
 namespace FocusPomodoro;
 
@@ -39,15 +41,132 @@ public partial class BreakWindow : Window
         Closed += BreakWindow_Closed;
     }
 
-    private void BreakWindow_Loaded(object sender, RoutedEventArgs e)
+    private async void BreakWindow_Loaded(object sender, RoutedEventArgs e)
     {
         Activate();
         Focus();
+        await InitializeAdAsync();
     }
 
     private void BreakWindow_Closed(object? sender, EventArgs e)
     {
         UnhookKeyboard();
+        AdWebView?.Dispose();
+    }
+
+    private string? _adHtmlPath;
+
+    private async Task InitializeAdAsync()
+    {
+        try
+        {
+            // Crear archivo HTML temporal para el anuncio
+            var adFolder = Path.Combine(Path.GetTempPath(), "FocusPomodoro_Ads");
+            Directory.CreateDirectory(adFolder);
+            _adHtmlPath = Path.Combine(adFolder, "ad.html");
+            File.WriteAllText(_adHtmlPath, BuildAdHtml());
+
+            var env = await CoreWebView2Environment.CreateAsync(
+                userDataFolder: Path.Combine(Path.GetTempPath(), "FocusPomodoro_WebView2"));
+
+            await AdWebView.EnsureCoreWebView2Async(env);
+
+            AdWebView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
+            AdWebView.CoreWebView2.Settings.AreDevToolsEnabled = false;
+            AdWebView.CoreWebView2.Settings.IsZoomControlEnabled = false;
+            AdWebView.CoreWebView2.Settings.IsStatusBarEnabled = false;
+
+            // Mapear host virtual para que el HTML tenga un origen valido
+            AdWebView.CoreWebView2.SetVirtualHostNameToFolderMapping(
+                "focuspomodoro.ads", adFolder, CoreWebView2HostResourceAccessKind.Allow);
+
+            AdWebView.CoreWebView2.NewWindowRequested += (s, args) =>
+            {
+                args.Handled = true;
+                Process.Start(new ProcessStartInfo(args.Uri) { UseShellExecute = true });
+            };
+
+            AdWebView.CoreWebView2.Navigate("https://focuspomodoro.ads/ad.html");
+            AdWebView.Visibility = Visibility.Visible;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Ad init failed: {ex.Message}");
+            AdWebView.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private string BuildAdHtml()
+    {
+        return """
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8"/>
+                <style>
+                    * { margin: 0; padding: 0; box-sizing: border-box; }
+                    body {
+                        background: transparent;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        gap: 15px;
+                        width: 300px;
+                        height: 780px;
+                        overflow: hidden;
+                    }
+                    .ad-slot { width: 300px; height: 250px; }
+                </style>
+            </head>
+            <body>
+                <!-- Ad 1 -->
+                <div class="ad-slot">
+                    <script type="text/javascript">
+                        atOptions = {
+                            'key' : '1c828a2e78a57e80663a67cf56c0e77f',
+                            'format' : 'iframe',
+                            'height' : 250,
+                            'width' : 300,
+                            'params' : {}
+                        };
+                    </script>
+                    <script type="text/javascript"
+                            src="https://www.highperformanceformat.com/1c828a2e78a57e80663a67cf56c0e77f/invoke.js">
+                    </script>
+                </div>
+                <!-- Ad 2 -->
+                <div class="ad-slot">
+                    <script type="text/javascript">
+                        atOptions = {
+                            'key' : 'fc8ca41d6cda48d37b90d4fed6c68c6c',
+                            'format' : 'iframe',
+                            'height' : 250,
+                            'width' : 300,
+                            'params' : {}
+                        };
+                    </script>
+                    <script type="text/javascript"
+                            src="https://www.highperformanceformat.com/fc8ca41d6cda48d37b90d4fed6c68c6c/invoke.js">
+                    </script>
+                </div>
+                <!-- Ad 3 -->
+                <div class="ad-slot">
+                    <script type="text/javascript">
+                        atOptions = {
+                            'key' : '8635ef9d9765aa735ecc4c78a028d8f3',
+                            'format' : 'iframe',
+                            'height' : 250,
+                            'width' : 300,
+                            'params' : {}
+                        };
+                    </script>
+                    <script type="text/javascript"
+                            src="https://www.highperformanceformat.com/8635ef9d9765aa735ecc4c78a028d8f3/invoke.js">
+                    </script>
+                </div>
+            </body>
+            </html>
+            """;
     }
 
     private void Timer_Tick(object? sender, EventArgs e)

@@ -33,6 +33,20 @@ public partial class SettingsWindow : Window
         BreakMinutesTextBox.Text = settings.BreakMinutes.ToString();
         OpacitySlider.Value = settings.Opacity;
         UpdateOpacityLabel(settings.Opacity);
+
+        if (settings.IsDrastic)
+        {
+            DrasticRadio.IsChecked = true;
+            LevelDescription.Text = "Sin pausa, sin reset, sin saltar descanso";
+        }
+        else
+        {
+            ModerateRadio.IsChecked = true;
+            LevelDescription.Text = "Permite pausar, resetear y saltar descanso";
+        }
+
+        ModerateRadio.Checked += (s, e) => LevelDescription.Text = "Permite pausar, resetear y saltar descanso";
+        DrasticRadio.Checked += (s, e) => LevelDescription.Text = "Sin pausa, sin reset, sin saltar descanso";
     }
 
     private void UpdateOpacityLabel(double opacity)
@@ -64,7 +78,8 @@ public partial class SettingsWindow : Window
         {
             FocusMinutes = focusMinutes,
             BreakMinutes = breakMinutes,
-            Opacity = OpacitySlider.Value
+            Opacity = OpacitySlider.Value,
+            IsDrastic = DrasticRadio.IsChecked == true
         };
 
         _settingsService.SaveSettings(settings);
