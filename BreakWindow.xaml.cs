@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Controls;
 using System.Windows.Threading;
@@ -19,6 +21,7 @@ public partial class BreakWindow : Window
     private bool _isRunning;
     private readonly Action? _onBreakComplete;
     private readonly bool _isDrastic;
+    private readonly List<Window> _blockerWindows = new();
 
     public BreakWindow(int breakDurationMinutes, Action? onBreakComplete = null, bool isDrastic = false)
     {
@@ -54,6 +57,7 @@ public partial class BreakWindow : Window
     {
         Activate();
         Focus();
+        CreateBlockerWindows();
         await InitializeAdAsync();
 
         if (_isDrastic)
@@ -66,6 +70,62 @@ public partial class BreakWindow : Window
     {
         UnhookKeyboard();
         AdWebView?.Dispose();
+        foreach (var w in _blockerWindows)
+            w.Close();
+        _blockerWindows.Clear();
+    }
+
+    private void CreateBlockerWindows()
+    {
+        // Get the screen where the main BreakWindow is displayed
+        var mainHandle = new WindowInteropHelper(this).Handle;
+        var mainMonitor = MonitorFromWindow(mainHandle, 0x00000002); // MONITOR_DEFAULTTONEAREST
+
+        EnumDisplayMonitors(IntPtr.Zero, IntPtr.Zero, (IntPtr hMonitor, IntPtr hdcMonitor, ref RECT lprcMonitor, IntPtr dwData) =>
+        {
+            if (hMonitor == mainMonitor)
+                return true; // skip the main monitor, BreakWindow already covers it
+
+            var blocker = new Window
+            {
+                WindowStyle = WindowStyle.None,
+                ResizeMode = ResizeMode.NoResize,
+                Topmost = true,
+                ShowInTaskbar = false,
+                Background = new SolidColorBrush(Color.FromRgb(10, 10, 26)),
+                Left = lprcMonitor.Left / _dpiScale,
+                Top = lprcMonitor.Top / _dpiScale,
+                Width = (lprcMonitor.Right - lprcMonitor.Left) / _dpiScale,
+                Height = (lprcMonitor.Bottom - lprcMonitor.Top) / _dpiScale,
+                AllowsTransparency = false
+            };
+            blocker.Show();
+            _blockerWindows.Add(blocker);
+            return true;
+        }, IntPtr.Zero);
+    }
+
+    private double _dpiScale
+    {
+        get
+        {
+            var source = PresentationSource.FromVisual(this);
+            return source?.CompositionTarget?.TransformToDevice.M11 ?? 1.0;
+        }
+    }
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint dwFlags);
+
+    private delegate bool MonitorEnumProc(IntPtr hMonitor, IntPtr hdcMonitor, ref RECT lprcMonitor, IntPtr dwData);
+
+    [DllImport("user32.dll")]
+    private static extern bool EnumDisplayMonitors(IntPtr hdc, IntPtr lprcClip, MonitorEnumProc lpfnEnum, IntPtr dwData);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct RECT
+    {
+        public int Left, Top, Right, Bottom;
     }
 
     private string? _adHtmlPath;

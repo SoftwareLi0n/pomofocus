@@ -107,7 +107,7 @@ namespace FocusPomodoro {
                 return;
             }
             _contentLoaded = true;
-            System.Uri resourceLocater = new System.Uri("/FocusPomodoro;component/historywindow.xaml", System.UriKind.Relative);
+            System.Uri resourceLocater = new System.Uri("/Soldado;component/historywindow.xaml", System.UriKind.Relative);
             
             #line 1 "..\..\..\HistoryWindow.xaml"
             System.Windows.Application.LoadComponent(this, resourceLocater);

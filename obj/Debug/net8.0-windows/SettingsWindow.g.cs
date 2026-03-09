@@ -123,7 +123,7 @@ namespace FocusPomodoro {
                 return;
             }
             _contentLoaded = true;
-            System.Uri resourceLocater = new System.Uri("/FocusPomodoro;component/settingswindow.xaml", System.UriKind.Relative);
+            System.Uri resourceLocater = new System.Uri("/Soldado;component/settingswindow.xaml", System.UriKind.Relative);
             
             #line 1 "..\..\..\SettingsWindow.xaml"
             System.Windows.Application.LoadComponent(this, resourceLocater);
