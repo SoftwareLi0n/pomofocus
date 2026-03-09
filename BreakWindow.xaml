@@ -93,6 +93,17 @@
                     <TextBlock Text="Start Break"/>
                 </StackPanel>
             </Button>
+
+            <Button x:Name="SkipBreakBtn"
+                    Click="SkipBreakBtn_Click"
+                    Background="Transparent"
+                    Foreground="#666"
+                    BorderThickness="0"
+                    FontSize="13"
+                    Cursor="Hand"
+                    HorizontalAlignment="Center"
+                    Margin="0,15,0,0"
+                    Content="Saltar descanso ⏭"/>
         </StackPanel>
 
         <TextBlock Grid.Column="0" x:Name="MotivationText"

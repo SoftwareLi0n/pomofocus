@@ -21,8 +21,16 @@ public partial class MainWindow : Window
     private bool _isRunning;
     private bool _isPaused;
     private bool _isBreakMode;
+    private bool _isDrastic;
     private DateTime _sessionStart;
     private Session? _currentSession;
+
+    // Constantes del anillo de progreso
+    private const double ArcCanvasSize = 190;
+    private const double ArcStrokeThickness = 7;
+    private const double ArcRadius = (ArcCanvasSize - ArcStrokeThickness) / 2.0;
+    private const double ArcCenterX = ArcCanvasSize / 2.0;
+    private const double ArcCenterY = ArcCanvasSize / 2.0;
 
     public MainWindow()
     {
@@ -43,16 +51,20 @@ public partial class MainWindow : Window
         _focusDurationMinutes = settings.FocusMinutes;
         _breakDurationMinutes = settings.BreakMinutes;
         _currentOpacity = settings.Opacity;
-        
+        _isDrastic = settings.IsDrastic;
+
         if (!_isBreakMode)
         {
             _remainingSeconds = _focusDurationMinutes * 60;
         }
-        
+
         var alpha = (byte)(_currentOpacity * 255);
-        var color = Color.FromArgb(alpha, 26, 26, 46);
+        var color = Color.FromArgb(alpha, 13, 13, 22);
         MainBorder.Background = new SolidColorBrush(color);
-        
+
+        // Actualizar visibilidad de botones segun modo
+        ResetBtn.Visibility = _isDrastic ? Visibility.Collapsed : Visibility.Visible;
+
         UpdateTimerDisplay();
     }
 
@@ -81,16 +93,97 @@ public partial class MainWindow : Window
         var minutes = _remainingSeconds / 60;
         var seconds = _remainingSeconds % 60;
         TimerText.Text = $"{minutes:D2}:{seconds:D2}";
+        UpdateProgressArc();
     }
 
-    private void StartBtn_Click(object sender, RoutedEventArgs e)
+    private void UpdateProgressArc()
     {
-        if (_isBreakMode && _isPaused)
+        int totalSeconds = (_isBreakMode ? _breakDurationMinutes : _focusDurationMinutes) * 60;
+        if (totalSeconds == 0)
         {
-            ResumeBreak();
+            ProgressArc.Data = null;
+            return;
+        }
+
+        double progress = (double)_remainingSeconds / totalSeconds;
+        if (progress <= 0)
+        {
+            ProgressArc.Data = null;
+            return;
+        }
+
+        double angle = progress * 360.0;
+        if (angle >= 360.0) angle = 359.99;
+
+        double startRad = -Math.PI / 2.0;
+        double endRad = startRad + angle * Math.PI / 180.0;
+
+        double x1 = ArcCenterX + ArcRadius * Math.Cos(startRad);
+        double y1 = ArcCenterY + ArcRadius * Math.Sin(startRad);
+        double x2 = ArcCenterX + ArcRadius * Math.Cos(endRad);
+        double y2 = ArcCenterY + ArcRadius * Math.Sin(endRad);
+
+        var figure = new PathFigure
+        {
+            StartPoint = new Point(x1, y1),
+            IsClosed = false
+        };
+        figure.Segments.Add(new ArcSegment
+        {
+            Point = new Point(x2, y2),
+            Size = new Size(ArcRadius, ArcRadius),
+            IsLargeArc = angle > 180,
+            SweepDirection = SweepDirection.Clockwise
+        });
+
+        var geometry = new PathGeometry();
+        geometry.Figures.Add(figure);
+        ProgressArc.Data = geometry;
+    }
+
+    private void SetArcColor(string hex)
+    {
+        ProgressArc.Stroke = (SolidColorBrush)new BrushConverter().ConvertFrom(hex)!;
+    }
+
+    private void PlayPauseBtn_Click(object sender, RoutedEventArgs e)
+    {
+        if (_isRunning)
+        {
+            // Pausar (solo en modo moderado)
+            if (_isDrastic) return;
+
+            _timer.Stop();
+            _isPaused = true;
+            _isRunning = false;
+            PlayPauseIcon.Text = "▶";
+            StatusText.Text = "PAUSED";
+            TimerText.Foreground = new SolidColorBrush(Color.FromRgb(250, 200, 60));
+            SetArcColor("#facc3c");
+        }
+        else if (_isPaused)
+        {
+            // Reanudar
+            _timer.Start();
+            _isPaused = false;
+            _isRunning = true;
+            PlayPauseIcon.Text = "⏸";
+            if (_isBreakMode)
+            {
+                StatusText.Text = "BREAK";
+                TimerText.Foreground = new SolidColorBrush(Color.FromRgb(251, 191, 36));
+                SetArcColor("#fbbf24");
+            }
+            else
+            {
+                StatusText.Text = "FOCUS";
+                TimerText.Foreground = Brushes.White;
+                SetArcColor("#e85d04");
+            }
         }
         else
         {
+            // Iniciar nueva sesion
             StartNewSession();
         }
     }
@@ -100,7 +193,7 @@ public partial class MainWindow : Window
         _isBreakMode = false;
         _remainingSeconds = _focusDurationMinutes * 60;
         _sessionStart = DateTime.Now;
-        
+
         _currentSession = new Session
         {
             StartTime = _sessionStart,
@@ -111,17 +204,18 @@ public partial class MainWindow : Window
         _isPaused = false;
         _timer.Start();
 
-        StartBtn.IsEnabled = false;
-        StatusText.Text = "Focusing...";
-        TimerText.Foreground = Brushes.LightGreen;
-        MainBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(40, 74, 222, 128));
+        PlayPauseIcon.Text = _isDrastic ? "▶" : "⏸";
+        StatusText.Text = "FOCUS";
+        TimerText.Foreground = Brushes.White;
+        SetArcColor("#e85d04");
+        UpdateTimerDisplay();
     }
 
     private void CompleteSession()
     {
         _timer.Stop();
         _isRunning = false;
-        
+
         if (_currentSession != null)
         {
             _currentSession.EndTime = DateTime.Now;
@@ -130,8 +224,8 @@ public partial class MainWindow : Window
         }
 
         System.Media.SystemSounds.Exclamation.Play();
-        
-        var breakWindow = new BreakWindow(_breakDurationMinutes, OnBreakComplete);
+
+        var breakWindow = new BreakWindow(_breakDurationMinutes, OnBreakComplete, _isDrastic);
         breakWindow.Show();
     }
 
@@ -160,11 +254,12 @@ public partial class MainWindow : Window
         _remainingSeconds = _focusDurationMinutes * 60;
         _currentSession = null;
 
+        PlayPauseIcon.Text = "▶";
+        ResetBtn.Visibility = _isDrastic ? Visibility.Collapsed : Visibility.Visible;
+        StatusText.Text = "READY";
+        TimerText.Foreground = Brushes.White;
+        SetArcColor("#00d9ff");
         UpdateTimerDisplay();
-        StartBtn.IsEnabled = true;
-        StatusText.Text = "Ready to focus";
-        TimerText.Foreground = Brushes.Cyan;
-        MainBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(21, 255, 255, 255));
     }
 
     private void ResumeBreak()
@@ -173,10 +268,16 @@ public partial class MainWindow : Window
         _isPaused = false;
         _timer.Start();
 
-        StartBtn.IsEnabled = false;
-        StatusText.Text = "On break...";
-        TimerText.Foreground = Brushes.Gold;
-        MainBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(40, 251, 191, 36));
+        PlayPauseIcon.Text = "⏸";
+        StatusText.Text = "BREAK";
+        TimerText.Foreground = new SolidColorBrush(Color.FromRgb(251, 191, 36));
+        SetArcColor("#fbbf24");
+    }
+
+    private void ResetBtn_Click(object sender, RoutedEventArgs e)
+    {
+        _timer.Stop();
+        ResetToFocusMode();
     }
 
     private void SettingsBtn_Click(object sender, RoutedEventArgs e)

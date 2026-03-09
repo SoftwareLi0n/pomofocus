@@ -18,25 +18,34 @@ public partial class BreakWindow : Window
     private int _remainingSeconds;
     private bool _isRunning;
     private readonly Action? _onBreakComplete;
+    private readonly bool _isDrastic;
 
-    public BreakWindow(int breakDurationMinutes, Action? onBreakComplete = null)
+    public BreakWindow(int breakDurationMinutes, Action? onBreakComplete = null, bool isDrastic = false)
     {
         InitializeComponent();
-        
+
         _breakDurationMinutes = breakDurationMinutes;
         _remainingSeconds = breakDurationMinutes * 60;
         _onBreakComplete = onBreakComplete;
-        
+        _isDrastic = isDrastic;
+
         _timer = new DispatcherTimer
         {
             Interval = TimeSpan.FromSeconds(1)
         };
         _timer.Tick += Timer_Tick;
-        
+
         UpdateTimerDisplay();
-        
+
         HookKeyboard();
-        
+
+        if (_isDrastic)
+        {
+            // En modo drastico, iniciar el descanso automaticamente sin boton
+            StartBreakBtn.Visibility = Visibility.Collapsed;
+            SkipBreakBtn.Visibility = Visibility.Collapsed;
+        }
+
         Loaded += BreakWindow_Loaded;
         Closed += BreakWindow_Closed;
     }
@@ -46,6 +55,11 @@ public partial class BreakWindow : Window
         Activate();
         Focus();
         await InitializeAdAsync();
+
+        if (_isDrastic)
+        {
+            StartBreak();
+        }
     }
 
     private void BreakWindow_Closed(object? sender, EventArgs e)
@@ -189,8 +203,18 @@ public partial class BreakWindow : Window
         TimerText.Text = $"{minutes:D2}:{seconds:D2}";
     }
 
+    private void SkipBreakBtn_Click(object sender, RoutedEventArgs e)
+    {
+        _timer.Stop();
+        _isRunning = false;
+        _onBreakComplete?.Invoke();
+        Close();
+    }
+
     private void StartBreakBtn_Click(object sender, RoutedEventArgs e)
     {
+        if (_isDrastic) return;
+
         if (_isRunning)
         {
             PauseBreak();
@@ -226,16 +250,24 @@ public partial class BreakWindow : Window
     {
         _timer.Stop();
         _isRunning = false;
-        
+
         System.Media.SystemSounds.Asterisk.Play();
-        
+
         StatusText.Text = "Break completed!";
         TimerText.Foreground = Brushes.Cyan;
         MotivationText.Text = "Great! You're ready to continue.";
-        
+
+        if (_isDrastic)
+        {
+            // En modo drastico, cerrar automaticamente al completar
+            _onBreakComplete?.Invoke();
+            Close();
+            return;
+        }
+
         SetButtonContent("✓", "Continue");
         StartBreakBtn.Click -= StartBreakBtn_Click;
-        StartBreakBtn.Click += (s, e) => 
+        StartBreakBtn.Click += (s, e) =>
         {
             _onBreakComplete?.Invoke();
             Close();
