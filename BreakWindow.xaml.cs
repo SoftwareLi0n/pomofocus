@@ -15,10 +15,9 @@ public partial class BreakWindow : Window
     private readonly int _breakDurationMinutes;
     private int _remainingSeconds;
     private bool _isRunning;
-    private bool _breakCompleted;
     private readonly Action? _onBreakComplete;
 
-    public BreakWindow(int breakDurationMinutes, Action? onBreakComplete = null, Action? onSkipBreak = null)
+    public BreakWindow(int breakDurationMinutes, Action? onBreakComplete = null)
     {
         InitializeComponent();
         
@@ -108,7 +107,6 @@ public partial class BreakWindow : Window
     {
         _timer.Stop();
         _isRunning = false;
-        _breakCompleted = true;
         
         System.Media.SystemSounds.Asterisk.Play();
         
