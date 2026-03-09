@@ -1,7 +1,7 @@
 <Window x:Class="FocusPomodoro.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Focus Pomodoro"
+        Title="Soldado"
         Height="200"
         Width="180"
         MinHeight="200"
