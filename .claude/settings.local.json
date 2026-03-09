@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(dotnet build)"
+      "Bash(dotnet build)",
+      "Bash(where magick)",
+      "Bash(where ffmpeg)",
+      "Bash(where iscc)",
+      "Bash(where \"C:/Program Files \\(x86\\)/Inno Setup 6/ISCC.exe\")"
     ]
   }
 }
