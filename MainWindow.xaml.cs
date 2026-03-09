@@ -3,6 +3,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using FocusPomodoro.Models;
 using FocusPomodoro.Services;
@@ -141,9 +142,128 @@ public partial class MainWindow : Window
         ProgressArc.Data = geometry;
     }
 
+    private Storyboard? _pulseStoryboard;
+    private System.Windows.Shapes.Path[] _glowSegments = null!;
+
     private void SetArcColor(string hex)
     {
         ProgressArc.Stroke = (SolidColorBrush)new BrushConverter().ConvertFrom(hex)!;
+    }
+
+    private void CreateGlowSegments()
+    {
+        _glowSegments = [GlowSeg1, GlowSeg2, GlowSeg3, GlowSeg4];
+
+        for (int i = 0; i < 4; i++)
+        {
+            double startDeg = -90 + i * 90 + 3;
+            double endDeg = startDeg + 84;
+
+            double startRad = startDeg * Math.PI / 180.0;
+            double endRad = endDeg * Math.PI / 180.0;
+
+            double x1 = ArcCenterX + ArcRadius * Math.Cos(startRad);
+            double y1 = ArcCenterY + ArcRadius * Math.Sin(startRad);
+            double x2 = ArcCenterX + ArcRadius * Math.Cos(endRad);
+            double y2 = ArcCenterY + ArcRadius * Math.Sin(endRad);
+
+            var figure = new PathFigure { StartPoint = new Point(x1, y1), IsClosed = false };
+            figure.Segments.Add(new ArcSegment
+            {
+                Point = new Point(x2, y2),
+                Size = new Size(ArcRadius, ArcRadius),
+                IsLargeArc = false,
+                SweepDirection = SweepDirection.Clockwise
+            });
+
+            var geo = new PathGeometry();
+            geo.Figures.Add(figure);
+            _glowSegments[i].Data = geo;
+        }
+    }
+
+    private void StartPulseAnimation()
+    {
+        if (_pulseStoryboard != null) return;
+
+        if (_glowSegments == null)
+            CreateGlowSegments();
+
+        _pulseStoryboard = new Storyboard();
+
+        var cycle = TimeSpan.FromSeconds(3.0);
+
+        // Par A (seg 1 y 3): ondas en la primera mitad
+        AddWaveAnimation(GlowSeg1, cycle, 0.0, 1.4);
+        AddWaveAnimation(GlowSeg3, cycle, 0.0, 1.4);
+
+        // Par B (seg 2 y 4): ondas en la segunda mitad
+        AddWaveAnimation(GlowSeg2, cycle, 1.5, 2.9);
+        AddWaveAnimation(GlowSeg4, cycle, 1.5, 2.9);
+
+        _pulseStoryboard.Begin(this, true);
+    }
+
+    private void AddWaveAnimation(System.Windows.Shapes.Path glow, TimeSpan cycle, double onStart, double onEnd)
+    {
+        // Opacity: aparece y se desvanece mientras sale
+        var opacity = new DoubleAnimationUsingKeyFrames
+        {
+            RepeatBehavior = RepeatBehavior.Forever,
+            Duration = cycle
+        };
+        if (onStart > 0)
+            opacity.KeyFrames.Add(new LinearDoubleKeyFrame(0.0, KeyTime.FromTimeSpan(TimeSpan.Zero)));
+        opacity.KeyFrames.Add(new LinearDoubleKeyFrame(0.0, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(onStart))));
+        opacity.KeyFrames.Add(new LinearDoubleKeyFrame(0.4, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(onStart + 0.15))));
+        opacity.KeyFrames.Add(new LinearDoubleKeyFrame(0.0, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(onEnd))));
+        if (onEnd < cycle.TotalSeconds)
+            opacity.KeyFrames.Add(new LinearDoubleKeyFrame(0.0, KeyTime.FromTimeSpan(cycle)));
+        Storyboard.SetTarget(opacity, glow);
+        Storyboard.SetTargetProperty(opacity, new PropertyPath("Opacity"));
+        _pulseStoryboard!.Children.Add(opacity);
+
+        // ScaleX: expande hacia afuera
+        var scaleX = new DoubleAnimationUsingKeyFrames
+        {
+            RepeatBehavior = RepeatBehavior.Forever,
+            Duration = cycle
+        };
+        if (onStart > 0)
+            scaleX.KeyFrames.Add(new LinearDoubleKeyFrame(1.0, KeyTime.FromTimeSpan(TimeSpan.Zero)));
+        scaleX.KeyFrames.Add(new LinearDoubleKeyFrame(1.0, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(onStart))));
+        scaleX.KeyFrames.Add(new LinearDoubleKeyFrame(1.18, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(onEnd))));
+        if (onEnd < cycle.TotalSeconds)
+            scaleX.KeyFrames.Add(new LinearDoubleKeyFrame(1.0, KeyTime.FromTimeSpan(cycle)));
+        Storyboard.SetTarget(scaleX, glow);
+        Storyboard.SetTargetProperty(scaleX, new PropertyPath("RenderTransform.ScaleX"));
+        _pulseStoryboard.Children.Add(scaleX);
+
+        // ScaleY: igual que ScaleX
+        var scaleY = new DoubleAnimationUsingKeyFrames
+        {
+            RepeatBehavior = RepeatBehavior.Forever,
+            Duration = cycle
+        };
+        if (onStart > 0)
+            scaleY.KeyFrames.Add(new LinearDoubleKeyFrame(1.0, KeyTime.FromTimeSpan(TimeSpan.Zero)));
+        scaleY.KeyFrames.Add(new LinearDoubleKeyFrame(1.0, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(onStart))));
+        scaleY.KeyFrames.Add(new LinearDoubleKeyFrame(1.18, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(onEnd))));
+        if (onEnd < cycle.TotalSeconds)
+            scaleY.KeyFrames.Add(new LinearDoubleKeyFrame(1.0, KeyTime.FromTimeSpan(cycle)));
+        Storyboard.SetTarget(scaleY, glow);
+        Storyboard.SetTargetProperty(scaleY, new PropertyPath("RenderTransform.ScaleY"));
+        _pulseStoryboard.Children.Add(scaleY);
+    }
+
+    private void StopPulseAnimation()
+    {
+        if (_pulseStoryboard == null) return;
+        _pulseStoryboard.Stop(this);
+        _pulseStoryboard = null;
+        if (_glowSegments != null)
+            foreach (var seg in _glowSegments)
+                seg.Opacity = 0;
     }
 
     private void PlayPauseBtn_Click(object sender, RoutedEventArgs e)
@@ -156,8 +276,9 @@ public partial class MainWindow : Window
             _timer.Stop();
             _isPaused = true;
             _isRunning = false;
+            StopPulseAnimation();
             PlayPauseIcon.Text = "▶";
-            StatusText.Text = "PAUSED";
+
             TimerText.Foreground = new SolidColorBrush(Color.FromRgb(250, 200, 60));
             SetArcColor("#facc3c");
         }
@@ -167,16 +288,17 @@ public partial class MainWindow : Window
             _timer.Start();
             _isPaused = false;
             _isRunning = true;
+            StartPulseAnimation();
             PlayPauseIcon.Text = "⏸";
             if (_isBreakMode)
             {
-                StatusText.Text = "BREAK";
+
                 TimerText.Foreground = new SolidColorBrush(Color.FromRgb(251, 191, 36));
                 SetArcColor("#fbbf24");
             }
             else
             {
-                StatusText.Text = "FOCUS";
+
                 TimerText.Foreground = Brushes.White;
                 SetArcColor("#e85d04");
             }
@@ -205,9 +327,10 @@ public partial class MainWindow : Window
         _timer.Start();
 
         PlayPauseIcon.Text = _isDrastic ? "▶" : "⏸";
-        StatusText.Text = "FOCUS";
+
         TimerText.Foreground = Brushes.White;
         SetArcColor("#e85d04");
+        StartPulseAnimation();
         UpdateTimerDisplay();
     }
 
@@ -215,6 +338,7 @@ public partial class MainWindow : Window
     {
         _timer.Stop();
         _isRunning = false;
+        StopPulseAnimation();
 
         if (_currentSession != null)
         {
@@ -241,6 +365,7 @@ public partial class MainWindow : Window
     {
         _timer.Stop();
         _isRunning = false;
+        StopPulseAnimation();
 
         System.Media.SystemSounds.Asterisk.Play();
         ResetToFocusMode();
@@ -254,9 +379,10 @@ public partial class MainWindow : Window
         _remainingSeconds = _focusDurationMinutes * 60;
         _currentSession = null;
 
+        StopPulseAnimation();
         PlayPauseIcon.Text = "▶";
         ResetBtn.Visibility = _isDrastic ? Visibility.Collapsed : Visibility.Visible;
-        StatusText.Text = "READY";
+
         TimerText.Foreground = Brushes.White;
         SetArcColor("#00d9ff");
         UpdateTimerDisplay();
@@ -269,7 +395,7 @@ public partial class MainWindow : Window
         _timer.Start();
 
         PlayPauseIcon.Text = "⏸";
-        StatusText.Text = "BREAK";
+
         TimerText.Foreground = new SolidColorBrush(Color.FromRgb(251, 191, 36));
         SetArcColor("#fbbf24");
     }
