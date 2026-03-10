@@ -92,6 +92,11 @@ public partial class SettingsWindow : Window
         Close();
     }
 
+    private void NumericOnly_PreviewTextInput(object sender, TextCompositionEventArgs e)
+    {
+        e.Handled = !int.TryParse(e.Text, out _);
+    }
+
     private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         try

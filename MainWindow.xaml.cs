@@ -437,8 +437,8 @@ public partial class MainWindow : Window
         catch
         {
             MessageBox.Show(
-                "Could not open the donation page. Please visit:\nhttps://softwarelion.pe/#/donaciones",
-                "Donate",
+                "No se pudo abrir la pagina de donaciones. Visita:\nhttps://softwarelion.pe/#/donaciones",
+                "Donar",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information
             );

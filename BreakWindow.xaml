@@ -47,19 +47,18 @@
 
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
 
         <!-- Contenido principal -->
         <StackPanel Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center">
-            <TextBlock Text="☕ Break Time"
+            <TextBlock Text="☕ Hora del descanso"
                        FontSize="48"
                        FontWeight="Bold"
                        Foreground="#fbbf24"
                        HorizontalAlignment="Center"
                        Margin="0,0,0,20"/>
 
-            <TextBlock Text="Session completed! Your mind needs a mandatory break."
+            <TextBlock Text="Sesion completada! Tu mente necesita un descanso obligatorio."
                        FontSize="20"
                        Foreground="#888"
                        HorizontalAlignment="Center"
@@ -76,7 +75,7 @@
                                FontFamily="Consolas"/>
 
                     <TextBlock x:Name="StatusText"
-                               Text="Ready to start your break"
+                               Text="Listo para iniciar tu descanso"
                                FontSize="16"
                                Foreground="#aaa"
                                HorizontalAlignment="Center"
@@ -90,7 +89,7 @@
                     HorizontalAlignment="Center">
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="▶" Margin="0,0,10,0" FontSize="16"/>
-                    <TextBlock Text="Start Break"/>
+                    <TextBlock Text="Iniciar descanso"/>
                 </StackPanel>
             </Button>
 
@@ -107,15 +106,15 @@
         </StackPanel>
 
         <TextBlock Grid.Column="0" x:Name="MotivationText"
-                   Text="Taking breaks is essential for productivity. Relax and recharge."
+                   Text="Tomar descansos es esencial para la productividad. Relajate y recarga."
                    FontSize="14"
                    Foreground="#555"
                    HorizontalAlignment="Center"
                    VerticalAlignment="Bottom"
                    Margin="0,0,0,50"/>
 
-        <!-- Sidebar de anuncios (derecha) -->
-        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,30,0">
+        <!-- Sidebar de anuncios (derecha) - oculto temporalmente -->
+        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,30,0" Visibility="Collapsed">
             <TextBlock Text="Publicidad"
                        FontSize="18" Foreground="#666"
                        Margin="0,0,0,10"/>

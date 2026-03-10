@@ -286,10 +286,10 @@ public partial class BreakWindow : Window
         _isRunning = true;
         _timer.Start();
         
-        SetButtonContent("⏸", "Pause");
-        StatusText.Text = "On break... Relax";
+        SetButtonContent("⏸", "Pausar");
+        StatusText.Text = "Descansando... Relajate";
         TimerText.Foreground = Brushes.LightGreen;
-        MotivationText.Text = "Close your eyes, stretch your body, take a deep breath.";
+        MotivationText.Text = "Cierra los ojos, estira el cuerpo, respira profundo.";
     }
 
     private void PauseBreak()
@@ -297,8 +297,8 @@ public partial class BreakWindow : Window
         _isRunning = false;
         _timer.Stop();
         
-        SetButtonContent("▶", "Resume");
-        StatusText.Text = "Break paused";
+        SetButtonContent("▶", "Reanudar");
+        StatusText.Text = "Descanso en pausa";
         TimerText.Foreground = Brushes.Gold;
     }
 
@@ -309,9 +309,9 @@ public partial class BreakWindow : Window
 
         System.Media.SystemSounds.Asterisk.Play();
 
-        StatusText.Text = "Break completed!";
+        StatusText.Text = "Descanso completado!";
         TimerText.Foreground = Brushes.Cyan;
-        MotivationText.Text = "Great! You're ready to continue.";
+        MotivationText.Text = "Excelente! Estas listo para continuar.";
 
         if (_isDrastic)
         {
@@ -321,7 +321,7 @@ public partial class BreakWindow : Window
             return;
         }
 
-        SetButtonContent("✓", "Continue");
+        SetButtonContent("✓", "Continuar");
         StartBreakBtn.Click -= StartBreakBtn_Click;
         StartBreakBtn.Click += (s, e) =>
         {
