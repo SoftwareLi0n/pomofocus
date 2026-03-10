@@ -44,8 +44,7 @@ public partial class BreakWindow : Window
 
         if (_isDrastic)
         {
-            // En modo drastico, iniciar el descanso automaticamente sin boton
-            StartBreakBtn.Visibility = Visibility.Collapsed;
+            // En modo drastico, no permitir saltar el descanso
             SkipBreakBtn.Visibility = Visibility.Collapsed;
         }
 
@@ -60,10 +59,7 @@ public partial class BreakWindow : Window
         CreateBlockerWindows();
         await InitializeAdAsync();
 
-        if (_isDrastic)
-        {
-            StartBreak();
-        }
+        // El usuario siempre debe dar click para iniciar el descanso
     }
 
     private void BreakWindow_Closed(object? sender, EventArgs e)
@@ -273,10 +269,10 @@ public partial class BreakWindow : Window
 
     private void StartBreakBtn_Click(object sender, RoutedEventArgs e)
     {
-        if (_isDrastic) return;
-
         if (_isRunning)
         {
+            // En modo drastico no se puede pausar el descanso
+            if (_isDrastic) return;
             PauseBreak();
         }
         else

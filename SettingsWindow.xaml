@@ -88,25 +88,29 @@
             <StackPanel Grid.Row="1" Margin="0,0,0,15">
                 <TextBlock Text="Tiempo de concentracion (minutos)" 
                            FontSize="11" Foreground="#aaa" Margin="0,0,0,5"/>
-                <TextBox x:Name="FocusMinutesTextBox" 
-                         Text="50" FontSize="14" 
-                         Background="#2d2d4480" 
+                <TextBox x:Name="FocusMinutesTextBox"
+                         Text="50" FontSize="14"
+                         Background="#2d2d4480"
                          Foreground="#fff"
                          BorderThickness="0"
                          Padding="10,8"
-                         VerticalContentAlignment="Center"/>
+                         VerticalContentAlignment="Center"
+                         PreviewTextInput="NumericOnly_PreviewTextInput"
+                         InputScope="Number"/>
             </StackPanel>
 
             <StackPanel Grid.Row="2" Margin="0,0,0,15">
                 <TextBlock Text="Tiempo de descanso (minutos)" 
                            FontSize="11" Foreground="#aaa" Margin="0,0,0,5"/>
-                <TextBox x:Name="BreakMinutesTextBox" 
-                         Text="10" FontSize="14" 
-                         Background="#2d2d4480" 
+                <TextBox x:Name="BreakMinutesTextBox"
+                         Text="10" FontSize="14"
+                         Background="#2d2d4480"
                          Foreground="#fff"
                          BorderThickness="0"
                          Padding="10,8"
-                         VerticalContentAlignment="Center"/>
+                         VerticalContentAlignment="Center"
+                         PreviewTextInput="NumericOnly_PreviewTextInput"
+                         InputScope="Number"/>
             </StackPanel>
 
             <StackPanel Grid.Row="3" Margin="0,0,0,15">

@@ -1,0 +1,54 @@
+<Window x:Class="FocusPomodoro.SmartlinkWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+        Title="Soldado"
+        Width="850" Height="580"
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ResizeMode="NoResize">
+
+    <Border CornerRadius="18" Background="#f0101020" BorderBrush="#333" BorderThickness="1">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <StackPanel Grid.Row="0" Margin="20,16,20,8">
+                <TextBlock Text="Sesion completada!"
+                           FontSize="20" FontWeight="Bold" Foreground="#4ade80"
+                           HorizontalAlignment="Center"/>
+                <TextBlock Text="Preparando tu descanso..."
+                           FontSize="13" Foreground="#888"
+                           HorizontalAlignment="Center" Margin="0,4,0,0"/>
+            </StackPanel>
+
+            <!-- WebView2 para Smartlink -->
+            <Border Grid.Row="1" Margin="16,4,16,4" CornerRadius="10" ClipToBounds="True">
+                <wv2:WebView2 x:Name="SmartlinkWebView"
+                              DefaultBackgroundColor="Transparent"/>
+            </Border>
+
+            <!-- Barra inferior: progress bar + countdown -->
+            <Grid Grid.Row="2" Margin="20,8,20,16">
+                <!-- Progress bar de fondo -->
+                <Border Background="#1a1a2e" CornerRadius="12" Height="36" ClipToBounds="True">
+                    <Border x:Name="ProgressBar" Background="#fbbf24" CornerRadius="12"
+                            HorizontalAlignment="Left" Width="0" Height="36"/>
+                </Border>
+                <!-- Texto del countdown encima -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock Text="El anuncio se cierra en " FontSize="15" Foreground="#ddd" FontWeight="SemiBold"/>
+                    <TextBlock x:Name="CountdownText" Text="5" FontSize="15" Foreground="#fff" FontWeight="Bold"/>
+                    <TextBlock Text="s" FontSize="15" Foreground="#ddd" FontWeight="SemiBold"/>
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

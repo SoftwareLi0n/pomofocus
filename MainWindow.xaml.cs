@@ -349,8 +349,16 @@ public partial class MainWindow : Window
 
         System.Media.SystemSounds.Exclamation.Play();
 
-        var breakWindow = new BreakWindow(_breakDurationMinutes, OnBreakComplete, _isDrastic);
-        breakWindow.Show();
+        // Mostrar Smartlink 5 segundos, luego abrir BreakWindow
+        var smartlink = new SmartlinkWindow(() =>
+        {
+            Dispatcher.Invoke(() =>
+            {
+                var breakWindow = new BreakWindow(_breakDurationMinutes, OnBreakComplete, _isDrastic);
+                breakWindow.Show();
+            });
+        });
+        smartlink.Show();
     }
 
     private void OnBreakComplete()

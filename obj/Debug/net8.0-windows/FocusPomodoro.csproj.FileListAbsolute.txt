@@ -36,3 +36,5 @@ D:\projects\Focus\FocusPomodoro\obj\Debug\net8.0-windows\Soldado.dll
 D:\projects\Focus\FocusPomodoro\obj\Debug\net8.0-windows\refint\Soldado.dll
 D:\projects\Focus\FocusPomodoro\obj\Debug\net8.0-windows\Soldado.pdb
 D:\projects\Focus\FocusPomodoro\obj\Debug\net8.0-windows\ref\Soldado.dll
+D:\projects\Focus\FocusPomodoro\obj\Debug\net8.0-windows\SmartlinkWindow.baml
+D:\projects\Focus\FocusPomodoro\obj\Debug\net8.0-windows\SmartlinkWindow.g.cs
