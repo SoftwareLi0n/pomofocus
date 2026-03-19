@@ -8,7 +8,7 @@
           "build/Microsoft.NET.ILLink.Tasks.props": {}
         }
       },
-      "Microsoft.Web.WebView2/1.0.3800.47": {
+      "Microsoft.Web.WebView2/1.0.3856.49": {
         "type": "package",
         "build": {
           "buildTransitive/Microsoft.Web.WebView2.targets": {}
@@ -36,7 +36,7 @@
           "build/Microsoft.NET.ILLink.Tasks.props": {}
         }
       },
-      "Microsoft.Web.WebView2/1.0.3800.47": {
+      "Microsoft.Web.WebView2/1.0.3856.49": {
         "type": "package",
         "native": {
           "runtimes/win-x64/native/WebView2Loader.dll": {}
@@ -99,10 +99,10 @@
         "useSharedDesignerContext.txt"
       ]
     },
-    "Microsoft.Web.WebView2/1.0.3800.47": {
-      "sha512": "vluoF9sqb72AB02yYs1UXW/2/VsxOMl2idiFJNvG993sOw3bHJvjHXmd3tqevTd9s3Md/9FgEzkOXoUl2Nb/ww==",
+    "Microsoft.Web.WebView2/1.0.3856.49": {
+      "sha512": "OOBKvFgK0pUKcndvTK6/jUsbrPRwce62Wt/0hkJWDsK2AcsJ2ylOS/mLa4xAcNUTOs96YIjpPN4AHMADXJcrgQ==",
       "type": "package",
-      "path": "microsoft.web.webview2/1.0.3800.47",
+      "path": "microsoft.web.webview2/1.0.3856.49",
       "hasTools": true,
       "files": [
         ".nupkg.metadata",
@@ -148,7 +148,7 @@
         "lib_manual/netcoreapp3.0/Microsoft.Web.WebView2.WinForms.xml",
         "lib_manual/netcoreapp3.0/Microsoft.Web.WebView2.Wpf.dll",
         "lib_manual/netcoreapp3.0/Microsoft.Web.WebView2.Wpf.xml",
-        "microsoft.web.webview2.1.0.3800.47.nupkg.sha512",
+        "microsoft.web.webview2.1.0.3856.49.nupkg.sha512",
         "microsoft.web.webview2.nuspec",
         "runtimes/win-arm64/native/WebView2Loader.dll",
         "runtimes/win-arm64/native_uap/Microsoft.Web.WebView2.Core.dll",

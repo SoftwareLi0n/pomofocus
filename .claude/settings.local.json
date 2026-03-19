@@ -14,7 +14,10 @@
       "Bash(find \"/c/Program Files \\(x86\\)\" \"/c/Program Files\" -name \"ISCC.exe\")",
       "Bash(find /d -maxdepth 4 -name \"ISCC.exe\")",
       "Bash(cmd.exe /c \"where /R \"\"C:\\\\Program Files \\(x86\\)\"\" ISCC.exe 2>NUL\")",
-      "Bash(cmd.exe /c \"where /R \"\"C:\\\\Program Files\"\" ISCC.exe 2>NUL\")"
+      "Bash(cmd.exe /c \"where /R \"\"C:\\\\Program Files\"\" ISCC.exe 2>NUL\")",
+      "Bash(dotnet publish:*)",
+      "Bash(\"C:\\\\Program Files \\(x86\\)\\\\Inno Setup 6\\\\ISCC.exe\" installer.iss)",
+      "Read(//c//**)"
     ]
   }
 }

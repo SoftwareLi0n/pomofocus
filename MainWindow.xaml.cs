@@ -43,8 +43,17 @@ public partial class MainWindow : Window
             Interval = TimeSpan.FromSeconds(1)
         };
         _timer.Tick += Timer_Tick;
+        Closing += MainWindow_Closing;
         ApplySettings(_settingsService.Settings);
         UpdateTimerDisplay();
+    }
+
+    private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
+    {
+        if (_isDrastic && _isRunning)
+        {
+            e.Cancel = true;
+        }
     }
 
     private void ApplySettings(AppSettings settings)
@@ -328,6 +337,13 @@ public partial class MainWindow : Window
 
         PlayPauseIcon.Text = _isDrastic ? "▶" : "⏸";
 
+        // Ocultar botones en modo drastico
+        if (_isDrastic)
+        {
+            CloseBtn.Visibility = Visibility.Collapsed;
+            SettingsBtn.IsEnabled = false;
+        }
+
         TimerText.Foreground = Brushes.White;
         SetArcColor("#e85d04");
         StartPulseAnimation();
@@ -390,6 +406,8 @@ public partial class MainWindow : Window
         StopPulseAnimation();
         PlayPauseIcon.Text = "▶";
         ResetBtn.Visibility = _isDrastic ? Visibility.Collapsed : Visibility.Visible;
+        CloseBtn.Visibility = Visibility.Visible;
+        SettingsBtn.IsEnabled = true;
 
         TimerText.Foreground = Brushes.White;
         SetArcColor("#00d9ff");
