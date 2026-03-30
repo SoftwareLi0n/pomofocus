@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Soldado")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c79713676a367e33666ef924fbefea3642970b00")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e4a4cf040c62bb0ca7cc785f568f4a3209dcf6ec")]
 [assembly: System.Reflection.AssemblyProductAttribute("Soldado")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Soldado")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

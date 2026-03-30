@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "D:\\projects\\Focus\\FocusPomodoro\\FocusPomodoro.csproj": {}
+    "D:\\projects\\projects-lion\\FocusPomodoro\\FocusPomodoro.csproj": {}
   },
   "projects": {
-    "D:\\projects\\Focus\\FocusPomodoro\\FocusPomodoro.csproj": {
+    "D:\\projects\\projects-lion\\FocusPomodoro\\FocusPomodoro.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\projects\\Focus\\FocusPomodoro\\FocusPomodoro.csproj",
+        "projectUniqueName": "D:\\projects\\projects-lion\\FocusPomodoro\\FocusPomodoro.csproj",
         "projectName": "Soldado",
-        "projectPath": "D:\\projects\\Focus\\FocusPomodoro\\FocusPomodoro.csproj",
+        "projectPath": "D:\\projects\\projects-lion\\FocusPomodoro\\FocusPomodoro.csproj",
         "packagesPath": "C:\\Users\\Lion\\.nuget\\packages\\",
-        "outputPath": "D:\\projects\\Focus\\FocusPomodoro\\obj\\",
+        "outputPath": "D:\\projects\\projects-lion\\FocusPomodoro\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -50,12 +50,6 @@
         "net8.0-windows7.0": {
           "targetAlias": "net8.0-windows",
           "dependencies": {
-            "Microsoft.NET.ILLink.Tasks": {
-              "suppressParent": "All",
-              "target": "Package",
-              "version": "[8.0.10, )",
-              "autoReferenced": true
-            },
             "Microsoft.Web.WebView2": {
               "target": "Package",
               "version": "[1.0.*, )"
@@ -72,20 +66,6 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
-          "downloadDependencies": [
-            {
-              "name": "Microsoft.AspNetCore.App.Runtime.win-x64",
-              "version": "[8.0.10, 8.0.10]"
-            },
-            {
-              "name": "Microsoft.NETCore.App.Runtime.win-x64",
-              "version": "[8.0.10, 8.0.10]"
-            },
-            {
-              "name": "Microsoft.WindowsDesktop.App.Runtime.win-x64",
-              "version": "[8.0.10, 8.0.10]"
-            }
-          ],
           "frameworkReferences": {
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
@@ -95,11 +75,6 @@
             }
           },
           "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.403/PortableRuntimeIdentifierGraph.json"
-        }
-      },
-      "runtimes": {
-        "win-x64": {
-          "#import": []
         }
       }
     }

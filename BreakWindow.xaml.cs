@@ -9,6 +9,8 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Controls;
 using System.Windows.Threading;
+using FocusPomodoro.Models;
+using FocusPomodoro.Services;
 using Microsoft.Web.WebView2.Core;
 
 namespace FocusPomodoro;
@@ -22,15 +24,19 @@ public partial class BreakWindow : Window
     private readonly Action? _onBreakComplete;
     private readonly bool _isDrastic;
     private readonly List<Window> _blockerWindows = new();
+    private readonly bool _autoStart;
+    private readonly DrasticStateService _drasticStateService = new();
+    private int _saveTickCounter;
 
-    public BreakWindow(int breakDurationMinutes, Action? onBreakComplete = null, bool isDrastic = false)
+    public BreakWindow(int breakDurationMinutes, Action? onBreakComplete = null, bool isDrastic = false, int? remainingSeconds = null, bool autoStart = false)
     {
         InitializeComponent();
 
         _breakDurationMinutes = breakDurationMinutes;
-        _remainingSeconds = breakDurationMinutes * 60;
+        _remainingSeconds = remainingSeconds ?? breakDurationMinutes * 60;
         _onBreakComplete = onBreakComplete;
         _isDrastic = isDrastic;
+        _autoStart = autoStart;
 
         _timer = new DispatcherTimer
         {
@@ -59,7 +65,10 @@ public partial class BreakWindow : Window
         CreateBlockerWindows();
         await InitializeAdAsync();
 
-        // El usuario siempre debe dar click para iniciar el descanso
+        if (_autoStart)
+        {
+            StartBreak();
+        }
     }
 
     private void BreakWindow_Closed(object? sender, EventArgs e)
@@ -245,6 +254,21 @@ public partial class BreakWindow : Window
         {
             _remainingSeconds--;
             UpdateTimerDisplay();
+
+            if (_isDrastic)
+            {
+                _saveTickCounter++;
+                if (_saveTickCounter % 5 == 0)
+                {
+                    var state = _drasticStateService.Load();
+                    if (state != null)
+                    {
+                        state.RemainingSeconds = _remainingSeconds;
+                        state.IsInBreak = true;
+                        _drasticStateService.Save(state);
+                    }
+                }
+            }
         }
         else
         {

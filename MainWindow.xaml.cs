@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Windows;
 using System.Windows.Input;
@@ -25,6 +26,9 @@ public partial class MainWindow : Window
     private bool _isDrastic;
     private DateTime _sessionStart;
     private Session? _currentSession;
+    private readonly DrasticStateService _drasticStateService;
+    private Process? _watchdogProcess;
+    private int _saveTickCounter;
 
     // Constantes del anillo de progreso
     private const double ArcCanvasSize = 190;
@@ -38,12 +42,14 @@ public partial class MainWindow : Window
         InitializeComponent();
         _sessionService = new SessionService();
         _settingsService = new SettingsService();
+        _drasticStateService = new DrasticStateService();
         _timer = new DispatcherTimer
         {
             Interval = TimeSpan.FromSeconds(1)
         };
         _timer.Tick += Timer_Tick;
         Closing += MainWindow_Closing;
+        Loaded += MainWindow_Loaded;
         ApplySettings(_settingsService.Settings);
         UpdateTimerDisplay();
     }
@@ -54,6 +60,98 @@ public partial class MainWindow : Window
         {
             e.Cancel = true;
         }
+    }
+
+    private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+    {
+        var state = _drasticStateService.Load();
+        if (state != null && state.LastUpdated > DateTime.Now.AddHours(-2) && _isDrastic)
+        {
+            ResumeFromDrasticState(state);
+        }
+        else if (state != null)
+        {
+            _drasticStateService.Clear();
+        }
+    }
+
+    private void ResumeFromDrasticState(DrasticState state)
+    {
+        _focusDurationMinutes = state.FocusDurationMinutes;
+        _breakDurationMinutes = state.BreakDurationMinutes;
+
+        var elapsed = (int)(DateTime.Now - state.LastUpdated).TotalSeconds;
+        var adjustedSeconds = Math.Max(0, state.RemainingSeconds - elapsed);
+
+        if (state.IsInBreak)
+        {
+            if (adjustedSeconds > 0)
+            {
+                LaunchWatchdog();
+                var breakWindow = new BreakWindow(_breakDurationMinutes, OnBreakComplete, true, adjustedSeconds, true);
+                breakWindow.Show();
+            }
+            else
+            {
+                _drasticStateService.Clear();
+                StartNewSession();
+            }
+        }
+        else
+        {
+            if (adjustedSeconds > 0)
+            {
+                StartNewSession(adjustedSeconds);
+            }
+            else
+            {
+                LaunchWatchdog();
+                SaveDrasticState(true, _breakDurationMinutes * 60);
+                var breakWindow = new BreakWindow(_breakDurationMinutes, OnBreakComplete, true, null, true);
+                breakWindow.Show();
+            }
+        }
+    }
+
+    private void SaveDrasticState(bool isInBreak, int remainingSeconds)
+    {
+        _drasticStateService.Save(new DrasticState
+        {
+            RemainingSeconds = remainingSeconds,
+            FocusDurationMinutes = _focusDurationMinutes,
+            BreakDurationMinutes = _breakDurationMinutes,
+            IsInBreak = isInBreak
+        });
+    }
+
+    private void LaunchWatchdog()
+    {
+        if (_watchdogProcess != null && !_watchdogProcess.HasExited)
+            return;
+
+        try
+        {
+            _watchdogProcess = Process.Start(new ProcessStartInfo
+            {
+                FileName = Environment.ProcessPath!,
+                Arguments = $"--watchdog {Environment.ProcessId}",
+                UseShellExecute = false,
+                CreateNoWindow = true
+            });
+        }
+        catch { }
+    }
+
+    private void StopWatchdog()
+    {
+        try
+        {
+            if (_watchdogProcess != null && !_watchdogProcess.HasExited)
+                _watchdogProcess.Kill();
+        }
+        catch { }
+        _watchdogProcess = null;
+        _drasticStateService.Clear();
     }
 
     private void ApplySettings(AppSettings settings)
@@ -84,6 +182,15 @@ public partial class MainWindow : Window
         {
             _remainingSeconds--;
             UpdateTimerDisplay();
+
+            if (_isDrastic && _isRunning)
+            {
+                _saveTickCounter++;
+                if (_saveTickCounter % 5 == 0)
+                {
+                    SaveDrasticState(false, _remainingSeconds);
+                }
+            }
         }
         else
         {
@@ -319,10 +426,10 @@ public partial class MainWindow : Window
         }
     }
 
-    private void StartNewSession()
+    private void StartNewSession(int? resumeRemainingSeconds = null)
     {
         _isBreakMode = false;
-        _remainingSeconds = _focusDurationMinutes * 60;
+        _remainingSeconds = resumeRemainingSeconds ?? _focusDurationMinutes * 60;
         _sessionStart = DateTime.Now;
 
         _currentSession = new Session
@@ -342,6 +449,8 @@ public partial class MainWindow : Window
         {
             CloseBtn.Visibility = Visibility.Collapsed;
             SettingsBtn.IsEnabled = false;
+            SaveDrasticState(false, _remainingSeconds);
+            LaunchWatchdog();
         }
 
         TimerText.Foreground = Brushes.White;
@@ -365,6 +474,11 @@ public partial class MainWindow : Window
 
         System.Media.SystemSounds.Exclamation.Play();
 
+        if (_isDrastic)
+        {
+            SaveDrasticState(true, _breakDurationMinutes * 60);
+        }
+
         // Mostrar Smartlink 5 segundos, luego abrir BreakWindow
         var smartlink = new SmartlinkWindow(() =>
         {
@@ -382,6 +496,10 @@ public partial class MainWindow : Window
         Dispatcher.Invoke(() =>
         {
             ResetToFocusMode();
+            if (_isDrastic)
+            {
+                StartNewSession();
+            }
         });
     }
 
