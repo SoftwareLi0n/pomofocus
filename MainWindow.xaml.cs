@@ -29,6 +29,7 @@ public partial class MainWindow : Window
     private readonly DrasticStateService _drasticStateService;
     private Process? _watchdogProcess;
     private int _saveTickCounter;
+    private bool _inDrasticSession;
 
     // Constantes del anillo de progreso
     private const double ArcCanvasSize = 190;
@@ -56,7 +57,7 @@ public partial class MainWindow : Window
 
     private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
-        if (_isDrastic && _isRunning)
+        if (_isDrastic && _inDrasticSession)
         {
             e.Cancel = true;
         }
@@ -135,8 +136,8 @@ public partial class MainWindow : Window
             {
                 FileName = Environment.ProcessPath!,
                 Arguments = $"--watchdog {Environment.ProcessId}",
-                UseShellExecute = false,
-                CreateNoWindow = true
+                UseShellExecute = true,
+                WindowStyle = ProcessWindowStyle.Hidden
             });
         }
         catch { }
@@ -447,6 +448,7 @@ public partial class MainWindow : Window
         // Ocultar botones en modo drastico
         if (_isDrastic)
         {
+            _inDrasticSession = true;
             CloseBtn.Visibility = Visibility.Collapsed;
             SettingsBtn.IsEnabled = false;
             SaveDrasticState(false, _remainingSeconds);
@@ -518,9 +520,11 @@ public partial class MainWindow : Window
         _isBreakMode = false;
         _isRunning = false;
         _isPaused = false;
+        _inDrasticSession = false;
         _remainingSeconds = _focusDurationMinutes * 60;
         _currentSession = null;
 
+        StopWatchdog();
         StopPulseAnimation();
         PlayPauseIcon.Text = "▶";
         ResetBtn.Visibility = _isDrastic ? Visibility.Collapsed : Visibility.Visible;

@@ -55,7 +55,18 @@ public partial class BreakWindow : Window
         }
 
         Loaded += BreakWindow_Loaded;
+        Closing += BreakWindow_Closing;
         Closed += BreakWindow_Closed;
+    }
+
+    private bool _allowClose;
+
+    private void BreakWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
+    {
+        if (_isDrastic && !_allowClose)
+        {
+            e.Cancel = true;
+        }
     }
 
     private async void BreakWindow_Loaded(object sender, RoutedEventArgs e)
@@ -287,6 +298,7 @@ public partial class BreakWindow : Window
     {
         _timer.Stop();
         _isRunning = false;
+        _allowClose = true;
         _onBreakComplete?.Invoke();
         Close();
     }
@@ -337,18 +349,11 @@ public partial class BreakWindow : Window
         TimerText.Foreground = Brushes.Cyan;
         MotivationText.Text = "Excelente! Estas listo para continuar.";
 
-        if (_isDrastic)
-        {
-            // En modo drastico, cerrar automaticamente al completar
-            _onBreakComplete?.Invoke();
-            Close();
-            return;
-        }
-
         SetButtonContent("✓", "Continuar");
         StartBreakBtn.Click -= StartBreakBtn_Click;
         StartBreakBtn.Click += (s, e) =>
         {
+            _allowClose = true;
             _onBreakComplete?.Invoke();
             Close();
         };
@@ -405,7 +410,11 @@ public partial class BreakWindow : Window
             
             if (vkCode == 27 && (Keyboard.Modifiers & ModifierKeys.Control) != 0)
                 return (IntPtr)1;
-            
+
+            // Bloquear Ctrl+Shift+Esc (abrir Task Manager)
+            if (vkCode == 27 && (Keyboard.Modifiers & ModifierKeys.Control) != 0 && (Keyboard.Modifiers & ModifierKeys.Shift) != 0)
+                return (IntPtr)1;
+
             if (vkCode == 91 || vkCode == 92)
                 return (IntPtr)1;
             
