@@ -1,4 +1,4 @@
-<Window x:Class="FocusPomodoro.BreakWindow"
+<Window x:Class="FocusPomodoro.VentanaDescanso"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
@@ -50,7 +50,7 @@
         </Grid.ColumnDefinitions>
 
         <!-- Contenido principal -->
-        <StackPanel Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center">
+        <StackPanel Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center" Height="691" Width="885">
             <TextBlock Text="☕ Hora del descanso"
                        FontSize="48"
                        FontWeight="Bold"

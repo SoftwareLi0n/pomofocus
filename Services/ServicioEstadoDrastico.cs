@@ -4,7 +4,7 @@ using FocusPomodoro.Models;
 
 namespace FocusPomodoro.Services;
 
-public class DrasticStateService
+public class ServicioEstadoDrastico
 {
     private static readonly string StatePath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
@@ -16,7 +16,7 @@ public class DrasticStateService
         WriteIndented = true
     };
 
-    public void Save(DrasticState state)
+    public void Save(EstadoDrastico state)
     {
         state.LastUpdated = DateTime.Now;
         try
@@ -31,14 +31,14 @@ public class DrasticStateService
         catch { }
     }
 
-    public DrasticState? Load()
+    public EstadoDrastico? Load()
     {
         try
         {
             if (File.Exists(StatePath))
             {
                 var json = File.ReadAllText(StatePath);
-                return JsonSerializer.Deserialize<DrasticState>(json, JsonOptions);
+                return JsonSerializer.Deserialize<EstadoDrastico>(json, JsonOptions);
             }
         }
         catch { }

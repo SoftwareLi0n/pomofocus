@@ -9,12 +9,12 @@ using FocusPomodoro.Services;
 
 namespace FocusPomodoro;
 
-public partial class HistoryWindow : Window
+public partial class VentanaHistorial : Window
 {
-    private readonly SessionService _sessionService;
-    private readonly Session? _currentSession;
+    private readonly ServicioSesion _sessionService;
+    private readonly Sesion? _currentSession;
 
-    public HistoryWindow(SessionService sessionService, double opacity = 0.75, Session? currentSession = null)
+    public VentanaHistorial(ServicioSesion sessionService, double opacity = 0.75, Sesion? currentSession = null)
     {
         InitializeComponent();
         _sessionService = sessionService;
@@ -58,13 +58,13 @@ public partial class HistoryWindow : Window
             var weekTotalDuration = weekSummary.Values.Sum(v => v.totalMinutes);
             WeekSummaryText.Text = $"{weekTotalFocused} min concentrado de {weekTotalDuration} min totales";
 
-            var displaySessions = allSessions.Select(s => new SessionDisplay
+            var displaySessions = allSessions.Select(s => new VistaSesion
             {
                 StartTime = s.StartTime,
                 TotalDurationMinutes = s.TotalDurationMinutes,
                 FocusedMinutes = s.FocusedMinutes,
                 Efficiency = s.TotalDurationMinutes > 0 ? (s.FocusedMinutes * 100 / s.TotalDurationMinutes) : 0,
-                FocusSegments = s.FocusSegments ?? new List<FocusSegment>(),
+                SegmentosEnfoque = s.SegmentosEnfoque ?? new List<SegmentoEnfoque>(),
                 EfficiencyColor = GetEfficiencyColor(s.TotalDurationMinutes > 0 ? (s.FocusedMinutes * 100 / s.TotalDurationMinutes) : 0)
             }).ToList();
 
@@ -81,20 +81,20 @@ public partial class HistoryWindow : Window
         }
     }
 
-    private SessionDisplay? GetCurrentSessionDisplay()
+    private VistaSesion? GetCurrentSessionDisplay()
     {
         if (_currentSession == null) return null;
 
-        var focusedMinutes = _currentSession.FocusSegments.Sum(s => s.TotalSeconds / 60);
+        var focusedMinutes = _currentSession.SegmentosEnfoque.Sum(s => s.TotalSeconds / 60);
         var efficiency = _currentSession.TotalDurationMinutes > 0 ? (focusedMinutes * 100 / _currentSession.TotalDurationMinutes) : 0;
 
-        return new SessionDisplay
+        return new VistaSesion
         {
             StartTime = _currentSession.StartTime,
             TotalDurationMinutes = _currentSession.TotalDurationMinutes,
             FocusedMinutes = focusedMinutes,
             Efficiency = efficiency,
-            FocusSegments = _currentSession.FocusSegments ?? new List<FocusSegment>(),
+            SegmentosEnfoque = _currentSession.SegmentosEnfoque ?? new List<SegmentoEnfoque>(),
             EfficiencyColor = GetEfficiencyColor(efficiency),
             IsInProgress = true
         };
@@ -141,17 +141,17 @@ public partial class HistoryWindow : Window
     }
 }
 
-public class SessionDisplay
+public class VistaSesion
 {
     public DateTime StartTime { get; set; }
     public int TotalDurationMinutes { get; set; }
     public int FocusedMinutes { get; set; }
     public int Efficiency { get; set; }
-    public List<FocusSegment> FocusSegments { get; set; } = new();
-    public int SegmentosCount => FocusSegments.Count;
-    public bool HasSegments => FocusSegments.Count > 0;
-    public string SegmentosDetalle => FocusSegments.Count > 0 
-        ? string.Join(" | ", FocusSegments.Select((s, i) => $"#{i + 1}: {s.FormattedDuration}"))
+    public List<SegmentoEnfoque> SegmentosEnfoque { get; set; } = new();
+    public int SegmentosCount => SegmentosEnfoque.Count;
+    public bool HasSegments => SegmentosEnfoque.Count > 0;
+    public string SegmentosDetalle => SegmentosEnfoque.Count > 0 
+        ? string.Join(" | ", SegmentosEnfoque.Select((s, i) => $"#{i + 1}: {s.FormattedDuration}"))
         : "Sin registros";
     public Brush EfficiencyColor { get; set; } = Brushes.White;
     public bool IsInProgress { get; set; }

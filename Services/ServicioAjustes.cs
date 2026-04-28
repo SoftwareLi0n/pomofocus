@@ -4,7 +4,7 @@ using FocusPomodoro.Models;
 
 namespace FocusPomodoro.Services;
 
-public class SettingsService
+public class ServicioAjustes
 {
     private static readonly string SettingsFilePath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
@@ -17,16 +17,16 @@ public class SettingsService
         WriteIndented = true
     };
 
-    private AppSettings _settings = new();
+    private AjustesApp _settings = new();
 
-    public AppSettings Settings => _settings;
+    public AjustesApp Settings => _settings;
 
-    public SettingsService()
+    public ServicioAjustes()
     {
         LoadSettings();
     }
 
-    public void SaveSettings(AppSettings settings)
+    public void SaveSettings(AjustesApp settings)
     {
         _settings = settings;
         try
@@ -52,7 +52,7 @@ public class SettingsService
             if (File.Exists(SettingsFilePath))
             {
                 var json = File.ReadAllText(SettingsFilePath);
-                var settings = JsonSerializer.Deserialize<AppSettings>(json, JsonOptions);
+                var settings = JsonSerializer.Deserialize<AjustesApp>(json, JsonOptions);
                 if (settings != null)
                 {
                     _settings = settings;
@@ -61,7 +61,7 @@ public class SettingsService
         }
         catch
         {
-            _settings = new AppSettings();
+            _settings = new AjustesApp();
         }
     }
 }

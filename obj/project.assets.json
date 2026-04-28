@@ -2,7 +2,7 @@
   "version": 3,
   "targets": {
     "net8.0-windows7.0": {
-      "Microsoft.Web.WebView2/1.0.3856.49": {
+      "Microsoft.Web.WebView2/1.0.3912.50": {
         "type": "package",
         "build": {
           "buildTransitive/Microsoft.Web.WebView2.targets": {}
@@ -22,24 +22,13 @@
           }
         }
       }
-    },
-    "net8.0-windows7.0/win-x64": {
-      "Microsoft.Web.WebView2/1.0.3856.49": {
-        "type": "package",
-        "native": {
-          "runtimes/win-x64/native/WebView2Loader.dll": {}
-        },
-        "build": {
-          "buildTransitive/Microsoft.Web.WebView2.targets": {}
-        }
-      }
     }
   },
   "libraries": {
-    "Microsoft.Web.WebView2/1.0.3856.49": {
-      "sha512": "OOBKvFgK0pUKcndvTK6/jUsbrPRwce62Wt/0hkJWDsK2AcsJ2ylOS/mLa4xAcNUTOs96YIjpPN4AHMADXJcrgQ==",
+    "Microsoft.Web.WebView2/1.0.3912.50": {
+      "sha512": "mEIKZDSmb6CxGWKoxaxTSJ0yi0DD2zp29TA7kJY2GdanuH3c5aYruwfqsm3OsYn/h2hUhybQZvfbxyZe4O+X4Q==",
       "type": "package",
-      "path": "microsoft.web.webview2/1.0.3856.49",
+      "path": "microsoft.web.webview2/1.0.3912.50",
       "hasTools": true,
       "files": [
         ".nupkg.metadata",
@@ -85,7 +74,7 @@
         "lib_manual/netcoreapp3.0/Microsoft.Web.WebView2.WinForms.xml",
         "lib_manual/netcoreapp3.0/Microsoft.Web.WebView2.Wpf.dll",
         "lib_manual/netcoreapp3.0/Microsoft.Web.WebView2.Wpf.xml",
-        "microsoft.web.webview2.1.0.3856.49.nupkg.sha512",
+        "microsoft.web.webview2.1.0.3912.50.nupkg.sha512",
         "microsoft.web.webview2.nuspec",
         "runtimes/win-arm64/native/WebView2Loader.dll",
         "runtimes/win-arm64/native_uap/Microsoft.Web.WebView2.Core.dll",
@@ -205,20 +194,6 @@
         ],
         "assetTargetFallback": true,
         "warn": true,
-        "downloadDependencies": [
-          {
-            "name": "Microsoft.AspNetCore.App.Runtime.win-x64",
-            "version": "[8.0.10, 8.0.10]"
-          },
-          {
-            "name": "Microsoft.NETCore.App.Runtime.win-x64",
-            "version": "[8.0.10, 8.0.10]"
-          },
-          {
-            "name": "Microsoft.WindowsDesktop.App.Runtime.win-x64",
-            "version": "[8.0.10, 8.0.10]"
-          }
-        ],
         "frameworkReferences": {
           "Microsoft.NETCore.App": {
             "privateAssets": "all"
@@ -228,11 +203,6 @@
           }
         },
         "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.403/PortableRuntimeIdentifierGraph.json"
-      }
-    },
-    "runtimes": {
-      "win-x64": {
-        "#import": []
       }
     }
   }

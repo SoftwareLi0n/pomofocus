@@ -15,8 +15,8 @@ namespace FocusPomodoro;
 public partial class MainWindow : Window
 {
     private readonly DispatcherTimer _timer;
-    private readonly SessionService _sessionService;
-    private readonly SettingsService _settingsService;
+    private readonly ServicioSesion _sessionService;
+    private readonly ServicioAjustes _settingsService;
     private int _remainingSeconds;
     private int _focusDurationMinutes;
     private int _breakDurationMinutes;
@@ -26,8 +26,8 @@ public partial class MainWindow : Window
     private bool _isBreakMode;
     private bool _isDrastic;
     private DateTime _sessionStart;
-    private Session? _currentSession;
-    private readonly DrasticStateService _drasticStateService;
+    private Sesion? _currentSession;
+    private readonly ServicioEstadoDrastico _drasticStateService;
     private Process? _watchdogProcess;
     private int _saveTickCounter;
     private bool _inDrasticSession;
@@ -43,9 +43,9 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        _sessionService = new SessionService();
-        _settingsService = new SettingsService();
-        _drasticStateService = new DrasticStateService();
+        _sessionService = new ServicioSesion();
+        _settingsService = new ServicioAjustes();
+        _drasticStateService = new ServicioEstadoDrastico();
         _timer = new DispatcherTimer
         {
             Interval = TimeSpan.FromSeconds(1)
@@ -149,7 +149,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void ResumeFromDrasticState(DrasticState state)
+    private void ResumeFromDrasticState(EstadoDrastico state)
     {
         _focusDurationMinutes = state.FocusDurationMinutes;
         _breakDurationMinutes = state.BreakDurationMinutes;
@@ -162,7 +162,7 @@ public partial class MainWindow : Window
             if (adjustedSeconds > 0)
             {
                 LaunchWatchdog();
-                var breakWindow = new BreakWindow(_breakDurationMinutes, OnBreakComplete, true, adjustedSeconds, true);
+                var breakWindow = new VentanaDescanso(_breakDurationMinutes, OnBreakComplete, true, adjustedSeconds, true);
                 breakWindow.Show();
             }
             else
@@ -181,7 +181,7 @@ public partial class MainWindow : Window
             {
                 LaunchWatchdog();
                 SaveDrasticState(true, _breakDurationMinutes * 60);
-                var breakWindow = new BreakWindow(_breakDurationMinutes, OnBreakComplete, true, null, true);
+                var breakWindow = new VentanaDescanso(_breakDurationMinutes, OnBreakComplete, true, null, true);
                 breakWindow.Show();
             }
         }
@@ -189,7 +189,7 @@ public partial class MainWindow : Window
 
     private void SaveDrasticState(bool isInBreak, int remainingSeconds)
     {
-        _drasticStateService.Save(new DrasticState
+        _drasticStateService.Save(new EstadoDrastico
         {
             RemainingSeconds = remainingSeconds,
             FocusDurationMinutes = _focusDurationMinutes,
@@ -228,7 +228,7 @@ public partial class MainWindow : Window
         _drasticStateService.Clear();
     }
 
-    private void ApplySettings(AppSettings settings)
+    private void ApplySettings(AjustesApp settings)
     {
         _focusDurationMinutes = settings.FocusMinutes;
         _breakDurationMinutes = settings.BreakMinutes;
@@ -506,7 +506,7 @@ public partial class MainWindow : Window
         _remainingSeconds = resumeRemainingSeconds ?? _focusDurationMinutes * 60;
         _sessionStart = DateTime.Now;
 
-        _currentSession = new Session
+        _currentSession = new Sesion
         {
             StartTime = _sessionStart,
             TotalDurationMinutes = _focusDurationMinutes
@@ -543,7 +543,7 @@ public partial class MainWindow : Window
         if (_currentSession != null)
         {
             _currentSession.EndTime = DateTime.Now;
-            _currentSession.FocusedMinutes = _currentSession.FocusSegments.Sum(s => s.TotalSeconds / 60);
+            _currentSession.FocusedMinutes = _currentSession.SegmentosEnfoque.Sum(s => s.TotalSeconds / 60);
             _sessionService.AddSession(_currentSession);
         }
 
@@ -554,12 +554,12 @@ public partial class MainWindow : Window
             SaveDrasticState(true, _breakDurationMinutes * 60);
         }
 
-        // Mostrar Smartlink 5 segundos, luego abrir BreakWindow
-        var smartlink = new SmartlinkWindow(() =>
+        // Mostrar Smartlink 5 segundos, luego abrir VentanaDescanso
+        var smartlink = new VentanaSmartlink(() =>
         {
             Dispatcher.Invoke(() =>
             {
-                var breakWindow = new BreakWindow(_breakDurationMinutes, OnBreakComplete, _isDrastic);
+                var breakWindow = new VentanaDescanso(_breakDurationMinutes, OnBreakComplete, _isDrastic);
                 breakWindow.Show();
             });
         });
@@ -629,7 +629,7 @@ public partial class MainWindow : Window
 
     private void SettingsBtn_Click(object sender, RoutedEventArgs e)
     {
-        var settingsWindow = new SettingsWindow(_settingsService, ApplySettings, _currentOpacity)
+        var settingsWindow = new VentanaAjustes(_settingsService, ApplySettings, _currentOpacity)
         {
             Owner = this,
             Topmost = true

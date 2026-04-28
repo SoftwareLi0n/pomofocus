@@ -15,7 +15,7 @@ using Microsoft.Web.WebView2.Core;
 
 namespace FocusPomodoro;
 
-public partial class BreakWindow : Window
+public partial class VentanaDescanso : Window
 {
     private readonly DispatcherTimer _timer;
     private readonly int _breakDurationMinutes;
@@ -25,10 +25,10 @@ public partial class BreakWindow : Window
     private readonly bool _isDrastic;
     private readonly List<Window> _blockerWindows = new();
     private readonly bool _autoStart;
-    private readonly DrasticStateService _drasticStateService = new();
+    private readonly ServicioEstadoDrastico _drasticStateService = new();
     private int _saveTickCounter;
 
-    public BreakWindow(int breakDurationMinutes, Action? onBreakComplete = null, bool isDrastic = false, int? remainingSeconds = null, bool autoStart = false)
+    public VentanaDescanso(int breakDurationMinutes, Action? onBreakComplete = null, bool isDrastic = false, int? remainingSeconds = null, bool autoStart = false)
     {
         InitializeComponent();
 

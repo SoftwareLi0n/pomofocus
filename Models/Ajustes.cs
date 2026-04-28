@@ -1,6 +1,6 @@
 namespace FocusPomodoro.Models;
 
-public class AppSettings
+public class AjustesApp
 {
     public int FocusMinutes { get; set; } = 50;
     public int BreakMinutes { get; set; } = 10;

@@ -1,6 +1,6 @@
 namespace FocusPomodoro.Models;
 
-public class FocusSegment
+public class SegmentoEnfoque
 {
     public DateTime StartTime { get; set; }
     public DateTime EndTime { get; set; }
@@ -18,18 +18,18 @@ public class FocusSegment
     }
 }
 
-public class Session
+public class Sesion
 {
     public string Id { get; set; } = Guid.NewGuid().ToString();
     public DateTime StartTime { get; set; }
     public DateTime EndTime { get; set; }
     public int TotalDurationMinutes { get; set; }
     public int FocusedMinutes { get; set; }
-    public List<FocusSegment> FocusSegments { get; set; } = new();
+    public List<SegmentoEnfoque> SegmentosEnfoque { get; set; } = new();
     public string? TaskName { get; set; }
 }
 
-public class SessionData
+public class DatosSesion
 {
-    public List<Session> Sessions { get; set; } = new();
+    public List<Sesion> Sesiones { get; set; } = new();
 }

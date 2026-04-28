@@ -8,14 +8,14 @@ using Microsoft.Web.WebView2.Core;
 
 namespace FocusPomodoro;
 
-public partial class SmartlinkWindow : Window
+public partial class VentanaSmartlink : Window
 {
     private readonly DispatcherTimer _countdownTimer;
     private int _secondsLeft = 5;
     private const int TotalSeconds = 5;
     private readonly Action _onClosed;
 
-    public SmartlinkWindow(Action onClosed)
+    public VentanaSmartlink(Action onClosed)
     {
         InitializeComponent();
         _onClosed = onClosed;

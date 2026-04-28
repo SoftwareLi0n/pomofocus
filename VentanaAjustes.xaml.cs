@@ -7,12 +7,12 @@ using FocusPomodoro.Services;
 
 namespace FocusPomodoro;
 
-public partial class SettingsWindow : Window
+public partial class VentanaAjustes : Window
 {
-    private readonly SettingsService _settingsService;
-    private readonly Action<AppSettings> _onSettingsSaved;
+    private readonly ServicioAjustes _settingsService;
+    private readonly Action<AjustesApp> _onSettingsSaved;
 
-    public SettingsWindow(SettingsService settingsService, Action<AppSettings> onSettingsSaved, double currentOpacity = 0.75)
+    public VentanaAjustes(ServicioAjustes settingsService, Action<AjustesApp> onSettingsSaved, double currentOpacity = 0.75)
     {
         InitializeComponent();
         _settingsService = settingsService;
@@ -81,7 +81,7 @@ public partial class SettingsWindow : Window
         EndHourCombo.ItemContainerStyle = itemStyle;
     }
 
-    private void SelectWorkHours(AppSettings settings)
+    private void SelectWorkHours(AjustesApp settings)
     {
         var startTimeStr = settings.WorkStartTime.ToString(@"hh\:mm");
         var endTimeStr = settings.WorkEndTime.ToString(@"hh\:mm");
@@ -139,7 +139,7 @@ public partial class SettingsWindow : Window
         var startParts = StartHourCombo.SelectedItem.ToString().Split(':');
         var endParts = EndHourCombo.SelectedItem.ToString().Split(':');
 
-        var settings = new AppSettings
+        var settings = new AjustesApp
         {
             FocusMinutes = focusMinutes,
             BreakMinutes = breakMinutes,

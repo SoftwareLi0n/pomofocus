@@ -6,7 +6,7 @@ using FocusPomodoro.Models;
 
 namespace FocusPomodoro.Services;
 
-public class SessionService
+public class ServicioSesion
 {
     private static readonly string DataFilePath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
@@ -21,33 +21,33 @@ public class SessionService
         Converters = { new JsonStringEnumConverter() }
     };
 
-    private SessionData _data = new();
+    private DatosSesion _data = new();
 
-    public SessionService()
+    public ServicioSesion()
     {
         LoadData();
     }
 
-    public void AddSession(Session session)
+    public void AddSession(Sesion session)
     {
-        _data.Sessions.Add(session);
+        _data.Sesiones.Add(session);
         SaveData();
     }
 
     public void ClearAllSessions()
     {
-        _data.Sessions.Clear();
+        _data.Sesiones.Clear();
         SaveData();
     }
 
-    public List<Session> GetAllSessions()
+    public List<Sesion> GetAllSessions()
     {
-        return _data.Sessions.OrderByDescending(s => s.StartTime).ToList();
+        return _data.Sesiones.OrderByDescending(s => s.StartTime).ToList();
     }
 
-    public List<Session> GetSessionsByDate(DateTime date)
+    public List<Sesion> GetSessionsByDate(DateTime date)
     {
-        return _data.Sessions
+        return _data.Sesiones
             .Where(s => s.StartTime.Date == date.Date)
             .OrderByDescending(s => s.StartTime)
             .ToList();
@@ -78,7 +78,7 @@ public class SessionService
             if (File.Exists(DataFilePath))
             {
                 var json = File.ReadAllText(DataFilePath);
-                var data = JsonSerializer.Deserialize<SessionData>(json, JsonOptions);
+                var data = JsonSerializer.Deserialize<DatosSesion>(json, JsonOptions);
                 if (data != null)
                 {
                     _data = data;
@@ -87,7 +87,7 @@ public class SessionService
         }
         catch
         {
-            _data = new SessionData();
+            _data = new DatosSesion();
         }
     }
 

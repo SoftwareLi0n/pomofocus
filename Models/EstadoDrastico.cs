@@ -1,6 +1,6 @@
 namespace FocusPomodoro.Models;
 
-public class DrasticState
+public class EstadoDrastico
 {
     public int RemainingSeconds { get; set; }
     public DateTime LastUpdated { get; set; }

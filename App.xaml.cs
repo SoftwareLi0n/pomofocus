@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Windows;
 using FocusPomodoro.Services;
 
@@ -37,7 +37,7 @@ public partial class App : Application
         }
         catch (ArgumentException) { }
 
-        var stateService = new DrasticStateService();
+        var stateService = new ServicioEstadoDrastico();
         var state = stateService.Load();
         if (state != null)
         {
