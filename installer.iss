@@ -25,6 +25,7 @@ Name: "startupicon"; Description: "Iniciar Soldado con Windows"; GroupDescriptio
 
 [Files]
 Source: "bin\Release\net8.0-windows\win-x64\publish\Soldado.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\Release\net8.0-windows\win-x64\publish\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "icon.ico"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]

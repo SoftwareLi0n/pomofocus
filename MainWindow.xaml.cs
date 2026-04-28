@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
@@ -30,6 +31,7 @@ public partial class MainWindow : Window
     private Process? _watchdogProcess;
     private int _saveTickCounter;
     private bool _inDrasticSession;
+    private Window? _blockerWindow;
 
     // Constantes del anillo de progreso
     private const double ArcCanvasSize = 190;
@@ -49,10 +51,30 @@ public partial class MainWindow : Window
             Interval = TimeSpan.FromSeconds(1)
         };
         _timer.Tick += Timer_Tick;
+        
+        var workHoursTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromSeconds(30)
+        };
+        workHoursTimer.Tick += WorkHoursTimer_Tick;
+        workHoursTimer.Start();
+        
         Closing += MainWindow_Closing;
         Loaded += MainWindow_Loaded;
         ApplySettings(_settingsService.Settings);
         UpdateTimerDisplay();
+    }
+
+    private void WorkHoursTimer_Tick(object? sender, EventArgs e)
+    {
+        var settings = _settingsService.Settings;
+        var now = DateTime.Now.TimeOfDay;
+        bool isInWorkHours = now >= settings.WorkStartTime && now <= settings.WorkEndTime;
+
+        if (!isInWorkHours && this.IsVisible)
+        {
+            CheckWorkHoursAndBlockIfNeeded();
+        }
     }
 
     private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
@@ -65,14 +87,65 @@ public partial class MainWindow : Window
 
     private void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
-        var state = _drasticStateService.Load();
-        if (state != null && state.LastUpdated > DateTime.Now.AddHours(-2) && _isDrastic)
+        CheckWorkHoursAndBlockIfNeeded();
+        
+        // Temporalmente deshabilitado para pruebas
+        // var state = _drasticStateService.Load();
+        // if (state != null && state.LastUpdated > DateTime.Now.AddHours(-2) && _isDrastic)
+        // {
+        //     ResumeFromDrasticState(state);
+        // }
+        // else if (state != null)
+        // {
+        //     _drasticStateService.Clear();
+        // }
+    }
+
+    private void CheckWorkHoursAndBlockIfNeeded()
+    {
+        var settings = _settingsService.Settings;
+        var now = DateTime.Now.TimeOfDay;
+
+        bool isInWorkHours = now >= settings.WorkStartTime && now <= settings.WorkEndTime;
+
+        if (!isInWorkHours)
         {
-            ResumeFromDrasticState(state);
+            if (_blockerWindow != null && _blockerWindow.IsVisible)
+                return;
+
+            _blockerWindow = new Window
+            {
+                WindowState = WindowState.Maximized,
+                WindowStyle = WindowStyle.None,
+                Topmost = true,
+                Background = new SolidColorBrush(Color.FromRgb(13, 13, 22))
+            };
+
+            var grid = new Grid();
+            var textBlock = new TextBlock
+            {
+                Text = "Fuera de horario de trabajo\nVuelve a las " + settings.WorkStartTime.ToString(@"hh\:mm"),
+                FontSize = 32,
+                Foreground = new SolidColorBrush(Color.FromRgb(0, 217, 255)),
+                TextAlignment = TextAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Center
+            };
+            grid.Children.Add(textBlock);
+            _blockerWindow.Content = grid;
+            _blockerWindow.Show();
+            this.Hide();
+            return;
         }
-        else if (state != null)
+        else
         {
-            _drasticStateService.Clear();
+            if (_blockerWindow != null)
+            {
+                _blockerWindow.Close();
+                _blockerWindow = null;
+            }
+            if (!this.IsVisible)
+                this.Show();
         }
     }
 

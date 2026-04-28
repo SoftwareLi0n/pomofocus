@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using FocusPomodoro.Models;
@@ -34,6 +35,9 @@ public partial class SettingsWindow : Window
         OpacitySlider.Value = settings.Opacity;
         UpdateOpacityLabel(settings.Opacity);
 
+        LoadWorkHoursComboBoxes();
+        SelectWorkHours(settings);
+
         if (settings.IsDrastic)
         {
             DrasticRadio.IsChecked = true;
@@ -47,6 +51,58 @@ public partial class SettingsWindow : Window
 
         ModerateRadio.Checked += (s, e) => LevelDescription.Text = "Permite pausar, resetear y saltar descanso";
         DrasticRadio.Checked += (s, e) => LevelDescription.Text = "Sin pausa, sin reset, sin saltar descanso";
+    }
+
+    private void LoadWorkHoursComboBoxes()
+    {
+        var itemStyle = new Style(typeof(ComboBoxItem));
+        itemStyle.Setters.Add(new Setter(ComboBoxItem.BackgroundProperty, new SolidColorBrush(Color.FromArgb(128, 45, 45, 68))));
+        itemStyle.Setters.Add(new Setter(ComboBoxItem.ForegroundProperty, Brushes.White));
+        itemStyle.Setters.Add(new Setter(ComboBoxItem.PaddingProperty, new Thickness(8, 4, 8, 4)));
+
+        var highlightTrigger = new Trigger { Property = UIElement.IsMouseOverProperty, Value = true };
+        highlightTrigger.Setters.Add(new Setter(ComboBoxItem.BackgroundProperty, new SolidColorBrush(Color.FromArgb(128, 77, 77, 102))));
+        itemStyle.Triggers.Add(highlightTrigger);
+
+        for (int hour = 0; hour < 24; hour++)
+        {
+            var time = new TimeSpan(hour, 0, 0);
+            StartHourCombo.Items.Add(time.ToString(@"hh\:mm"));
+            EndHourCombo.Items.Add(time.ToString(@"hh\:mm"));
+        }
+        for (int hour = 0; hour < 24; hour++)
+        {
+            var time = new TimeSpan(hour, 30, 0);
+            StartHourCombo.Items.Add(time.ToString(@"hh\:mm"));
+            EndHourCombo.Items.Add(time.ToString(@"hh\:mm"));
+        }
+
+        StartHourCombo.ItemContainerStyle = itemStyle;
+        EndHourCombo.ItemContainerStyle = itemStyle;
+    }
+
+    private void SelectWorkHours(AppSettings settings)
+    {
+        var startTimeStr = settings.WorkStartTime.ToString(@"hh\:mm");
+        var endTimeStr = settings.WorkEndTime.ToString(@"hh\:mm");
+
+        for (int i = 0; i < StartHourCombo.Items.Count; i++)
+        {
+            if (StartHourCombo.Items[i].ToString() == startTimeStr)
+            {
+                StartHourCombo.SelectedIndex = i;
+                break;
+            }
+        }
+
+        for (int i = 0; i < EndHourCombo.Items.Count; i++)
+        {
+            if (EndHourCombo.Items[i].ToString() == endTimeStr)
+            {
+                EndHourCombo.SelectedIndex = i;
+                break;
+            }
+        }
     }
 
     private void UpdateOpacityLabel(double opacity)
@@ -74,12 +130,23 @@ public partial class SettingsWindow : Window
             return;
         }
 
+        if (StartHourCombo.SelectedItem == null || EndHourCombo.SelectedItem == null)
+        {
+            MessageBox.Show("Selecciona el horario de trabajo", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var startParts = StartHourCombo.SelectedItem.ToString().Split(':');
+        var endParts = EndHourCombo.SelectedItem.ToString().Split(':');
+
         var settings = new AppSettings
         {
             FocusMinutes = focusMinutes,
             BreakMinutes = breakMinutes,
             Opacity = OpacitySlider.Value,
-            IsDrastic = DrasticRadio.IsChecked == true
+            IsDrastic = DrasticRadio.IsChecked == true,
+            WorkStartTime = new TimeSpan(int.Parse(startParts[0]), int.Parse(startParts[1]), 0),
+            WorkEndTime = new TimeSpan(int.Parse(endParts[0]), int.Parse(endParts[1]), 0)
         };
 
         _settingsService.SaveSettings(settings);
