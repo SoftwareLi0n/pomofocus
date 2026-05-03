@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -7,8 +8,8 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
-using FocusPomodoro.Models;
-using FocusPomodoro.Services;
+using FocusPomodoro.Core.Models;
+using FocusPomodoro.Core.Services;
 
 namespace FocusPomodoro;
 
@@ -59,10 +60,49 @@ public partial class MainWindow : Window
         workHoursTimer.Tick += WorkHoursTimer_Tick;
         workHoursTimer.Start();
         
+        var externalWatchdogTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromSeconds(5)
+        };
+        externalWatchdogTimer.Tick += ExternalWatchdogTimer_Tick;
+        externalWatchdogTimer.Start();
+        
         Closing += MainWindow_Closing;
         Loaded += MainWindow_Loaded;
         ApplySettings(_settingsService.Settings);
         UpdateTimerDisplay();
+    }
+
+    private void ExternalWatchdogTimer_Tick(object? sender, EventArgs e)
+    {
+        EnsureExternalWatchdogRunning();
+    }
+
+    private void EnsureExternalWatchdogRunning()
+    {
+        try
+        {
+            var watchdogProcesses = Process.GetProcessesByName("SoldadoWatchdog");
+            bool isRunning = watchdogProcesses.Length > 0 && !watchdogProcesses[0].HasExited;
+
+            if (!isRunning)
+            {
+                var exePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "SoldadoWatchdog.exe");
+                if (File.Exists(exePath))
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = exePath,
+                        UseShellExecute = true
+                    });
+                    Console.WriteLine("External watchdog not running. Started.");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error checking external watchdog: {ex.Message}");
+        }
     }
 
     private void WorkHoursTimer_Tick(object? sender, EventArgs e)
@@ -83,22 +123,55 @@ public partial class MainWindow : Window
         {
             e.Cancel = true;
         }
+        else
+        {
+            try
+            {
+                var appDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "FocusPomodoro");
+                if (!Directory.Exists(appDataPath))
+                    Directory.CreateDirectory(appDataPath);
+                
+                var lockFilePath = Path.Combine(appDataPath, "watchdog.lock");
+                File.WriteAllText(lockFilePath, "disabled");
+            }
+            catch { }
+        }
     }
 
     private void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
+        try
+        {
+            var appDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "FocusPomodoro");
+            if (!Directory.Exists(appDataPath))
+                Directory.CreateDirectory(appDataPath);
+            
+            var lockFilePath = Path.Combine(appDataPath, "watchdog.lock");
+            if (File.Exists(lockFilePath))
+                File.Delete(lockFilePath);
+        }
+        catch { }
+
+        EnsureExternalWatchdogRunning();
+        
         CheckWorkHoursAndBlockIfNeeded();
         
-        // Temporalmente deshabilitado para pruebas
-        // var state = _drasticStateService.Load();
-        // if (state != null && state.LastUpdated > DateTime.Now.AddHours(-2) && _isDrastic)
-        // {
-        //     ResumeFromDrasticState(state);
-        // }
-        // else if (state != null)
-        // {
-        //     _drasticStateService.Clear();
-        // }
+        // Check for drastic state on startup
+        var state = _drasticStateService.Load();
+        if (state != null)
+        {
+            // Always resume drastic state if it exists and is less than 12 hours old
+            // The saved state itself indicates we were in a drastic session
+            if (state.LastUpdated > DateTime.Now.AddHours(-12))
+            {
+                _isDrastic = true;  // Ensure drastic mode is enabled
+                ResumeFromDrasticState(state);
+            }
+            else
+            {
+                _drasticStateService.Clear();
+            }
+        }
     }
 
     private void CheckWorkHoursAndBlockIfNeeded()
@@ -157,6 +230,12 @@ public partial class MainWindow : Window
         var elapsed = (int)(DateTime.Now - state.LastUpdated).TotalSeconds;
         var adjustedSeconds = Math.Max(0, state.RemainingSeconds - elapsed);
 
+        // Si el tiempo ya pasó, iniciar descanso
+        if (adjustedSeconds <= 0)
+        {
+            adjustedSeconds = 0;
+        }
+
         if (state.IsInBreak)
         {
             if (adjustedSeconds > 0)
@@ -173,16 +252,40 @@ public partial class MainWindow : Window
         }
         else
         {
-            if (adjustedSeconds > 0)
+            // FOCOUS MODE: Reanudar directamente
+            _isBreakMode = false;
+            _remainingSeconds = adjustedSeconds;
+            _isRunning = true;
+            _isPaused = false;
+            _timer.Start();
+
+            // Configurar UI
+            PlayPauseIcon.Text = "⏸";
+            PlayPauseBtn.IsEnabled = !_isDrastic;
+            TimerText.Foreground = Brushes.White;
+            SetArcColor("#e85d04");
+            StartPulseAnimation();
+            UpdateTimerDisplay();
+
+            // Configurar sesión drástica
+            if (_isDrastic)
             {
-                StartNewSession(adjustedSeconds);
-            }
-            else
-            {
+                _inDrasticSession = true;
+                CloseBtn.Visibility = Visibility.Collapsed;
+                SettingsBtn.IsEnabled = false;
+                SaveDrasticState(false, _remainingSeconds);
                 LaunchWatchdog();
-                SaveDrasticState(true, _breakDurationMinutes * 60);
-                var breakWindow = new VentanaDescanso(_breakDurationMinutes, OnBreakComplete, true, null, true);
-                breakWindow.Show();
+            }
+
+            // Crear nueva sesión si no existe
+            if (_currentSession == null)
+            {
+                _sessionStart = DateTime.Now;
+                _currentSession = new Sesion
+                {
+                    StartTime = _sessionStart,
+                    TotalDurationMinutes = _focusDurationMinutes
+                };
             }
         }
     }
@@ -194,7 +297,8 @@ public partial class MainWindow : Window
             RemainingSeconds = remainingSeconds,
             FocusDurationMinutes = _focusDurationMinutes,
             BreakDurationMinutes = _breakDurationMinutes,
-            IsInBreak = isInBreak
+            IsInBreak = isInBreak,
+            LastUpdated = DateTime.Now
         });
     }
 
@@ -259,11 +363,7 @@ public partial class MainWindow : Window
 
             if (_isDrastic && _isRunning)
             {
-                _saveTickCounter++;
-                if (_saveTickCounter % 5 == 0)
-                {
-                    SaveDrasticState(false, _remainingSeconds);
-                }
+                SaveDrasticState(false, _remainingSeconds);
             }
         }
         else
@@ -516,7 +616,8 @@ public partial class MainWindow : Window
         _isPaused = false;
         _timer.Start();
 
-        PlayPauseIcon.Text = _isDrastic ? "▶" : "⏸";
+        PlayPauseIcon.Text = "⏸";
+        PlayPauseBtn.IsEnabled = !_isDrastic;
 
         // Ocultar botones en modo drastico
         if (_isDrastic)
@@ -554,16 +655,28 @@ public partial class MainWindow : Window
             SaveDrasticState(true, _breakDurationMinutes * 60);
         }
 
-        // Mostrar Smartlink 5 segundos, luego abrir VentanaDescanso
-        var smartlink = new VentanaSmartlink(() =>
+        if (_isDrastic)
         {
+            // In Drastic mode, go directly to break without Smartlink
             Dispatcher.Invoke(() =>
             {
-                var breakWindow = new VentanaDescanso(_breakDurationMinutes, OnBreakComplete, _isDrastic);
+                var breakWindow = new VentanaDescanso(_breakDurationMinutes, OnBreakComplete, true);
                 breakWindow.Show();
             });
-        });
-        smartlink.Show();
+        }
+        else
+        {
+            // Mostrar Smartlink 5 segundos, luego abrir VentanaDescanso
+            var smartlink = new VentanaSmartlink(() =>
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    var breakWindow = new VentanaDescanso(_breakDurationMinutes, OnBreakComplete, _isDrastic);
+                    breakWindow.Show();
+                });
+            });
+            smartlink.Show();
+        }
     }
 
     private void OnBreakComplete()

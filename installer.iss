@@ -24,9 +24,13 @@ Name: "desktopicon"; Description: "Crear acceso directo en el escritorio"; Group
 Name: "startupicon"; Description: "Iniciar Soldado con Windows"; GroupDescription: "Opciones adicionales:";
 
 [Files]
-Source: "bin\Release\net8.0-windows\win-x64\publish\Soldado.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "bin\Release\net8.0-windows\win-x64\publish\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "bin\Release\net8.0-windows\publish\Soldado.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\Release\net8.0-windows\publish\SoldadoWatchdog.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\Release\net8.0-windows\publish\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "icon.ico"; DestDir: "{app}"; Flags: ignoreversion
+
+[Registry]
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "SoldadoWatchdog"; ValueData: """{app}\SoldadoWatchdog.exe"""; Flags: uninsdeletevalue
 
 [Icons]
 Name: "{group}\Soldado"; Filename: "{app}\Soldado.exe"; IconFilename: "{app}\icon.ico"
@@ -35,4 +39,5 @@ Name: "{autodesktop}\Soldado"; Filename: "{app}\Soldado.exe"; IconFilename: "{ap
 Name: "{userstartup}\Soldado"; Filename: "{app}\Soldado.exe"; Tasks: startupicon
 
 [Run]
+Filename: "{app}\SoldadoWatchdog.exe"; Description: "Iniciar Watchdog"; Flags: nowait postinstall skipifsilent
 Filename: "{app}\Soldado.exe"; Description: "Ejecutar Soldado"; Flags: nowait postinstall skipifsilent

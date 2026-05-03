@@ -1,6 +1,6 @@
+using FocusPomodoro.Core.Services;
 using System.Diagnostics;
 using System.Windows;
-using FocusPomodoro.Services;
 
 namespace FocusPomodoro;
 
