@@ -11,6 +11,8 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
+        Application.Current.SessionEnding += App_SessionEnding;
+
         if (e.Args.Length >= 2 && e.Args[0] == "--watchdog")
         {
             ShutdownMode = ShutdownMode.OnExplicitShutdown;
@@ -27,6 +29,17 @@ public partial class App : Application
 
         var mainWindow = new MainWindow();
         mainWindow.Show();
+    }
+
+    private void App_SessionEnding(object sender, SessionEndingCancelEventArgs e)
+    {
+        var stateService = new ServicioEstadoDrastico();
+        var state = stateService.Load();
+        
+        if (state != null && state.LastUpdated > DateTime.Now.AddHours(-12))
+        {
+            e.Cancel = true;
+        }
     }
 
     private void RunWatchdog(int targetPid)
