@@ -1,6 +1,7 @@
 using FocusPomodoro.Core.Services;
 using System.Diagnostics;
 using System.Windows;
+using System.Threading;
 
 namespace FocusPomodoro;
 
@@ -30,6 +31,14 @@ public partial class App : Application
 
     private void RunWatchdog(int targetPid)
     {
+        bool createdNew;
+        using var mutex = new Mutex(true, "SoldadoInternalWatchdog_" + targetPid, out createdNew);
+        if (!createdNew)
+        {
+            Dispatcher.Invoke(() => Shutdown());
+            return;
+        }
+
         try
         {
             using var process = Process.GetProcessById(targetPid);
@@ -49,8 +58,10 @@ public partial class App : Application
             {
                 Process.Start(new ProcessStartInfo
                 {
-                    FileName = Environment.ProcessPath!,
-                    UseShellExecute = true
+                    FileName = "cmd.exe",
+                    Arguments = $"/c start \"\" \"{Environment.ProcessPath!}\"",
+                    UseShellExecute = false,
+                    CreateNoWindow = true
                 });
             }
             catch { }

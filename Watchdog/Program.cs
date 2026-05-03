@@ -81,8 +81,10 @@ internal class Program
             {
                 Process.Start(new ProcessStartInfo
                 {
-                    FileName = exePath,
-                    UseShellExecute = true
+                    FileName = "cmd.exe",
+                    Arguments = $"/c start \"\" \"{exePath}\"",
+                    UseShellExecute = false,
+                    CreateNoWindow = true
                 });
                 Console.WriteLine($"{TargetProcessName} started successfully");
             }

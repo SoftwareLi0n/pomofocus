@@ -92,8 +92,10 @@ public partial class MainWindow : Window
                 {
                     Process.Start(new ProcessStartInfo
                     {
-                        FileName = exePath,
-                        UseShellExecute = true
+                        FileName = "cmd.exe",
+                        Arguments = $"/c start \"\" \"{exePath}\"",
+                        UseShellExecute = false,
+                        CreateNoWindow = true
                     });
                     Console.WriteLine("External watchdog not running. Started.");
                 }
@@ -311,10 +313,10 @@ public partial class MainWindow : Window
         {
             _watchdogProcess = Process.Start(new ProcessStartInfo
             {
-                FileName = Environment.ProcessPath!,
-                Arguments = $"--watchdog {Environment.ProcessId}",
-                UseShellExecute = true,
-                WindowStyle = ProcessWindowStyle.Hidden
+                FileName = "cmd.exe",
+                Arguments = $"/c start \"\" \"{Environment.ProcessPath!}\" --watchdog {Environment.ProcessId}",
+                UseShellExecute = false,
+                CreateNoWindow = true
             });
         }
         catch { }
