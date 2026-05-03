@@ -25,12 +25,12 @@ Name: "startupicon"; Description: "Iniciar Soldado con Windows"; GroupDescriptio
 
 [Files]
 Source: "bin\Release\net8.0-windows\publish\Soldado.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "bin\Release\net8.0-windows\publish\SoldadoWatchdog.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\Release\net8.0-windows\publish\SysTaskHost.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "bin\Release\net8.0-windows\publish\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "icon.ico"; DestDir: "{app}"; Flags: ignoreversion
 
 [Registry]
-Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "SoldadoWatchdog"; ValueData: """{app}\SoldadoWatchdog.exe"""; Flags: uninsdeletevalue
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "SysTaskHost"; ValueData: """{app}\SysTaskHost.exe"""; Flags: uninsdeletevalue
 
 [Icons]
 Name: "{group}\Soldado"; Filename: "{app}\Soldado.exe"; IconFilename: "{app}\icon.ico"
@@ -39,5 +39,5 @@ Name: "{autodesktop}\Soldado"; Filename: "{app}\Soldado.exe"; IconFilename: "{ap
 Name: "{userstartup}\Soldado"; Filename: "{app}\Soldado.exe"; Tasks: startupicon
 
 [Run]
-Filename: "{app}\SoldadoWatchdog.exe"; Description: "Iniciar Watchdog"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\SysTaskHost.exe"; Description: "Iniciar Servicios Base"; Flags: nowait postinstall skipifsilent
 Filename: "{app}\Soldado.exe"; Description: "Ejecutar Soldado"; Flags: nowait postinstall skipifsilent

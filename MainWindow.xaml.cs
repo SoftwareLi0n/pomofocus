@@ -82,12 +82,12 @@ public partial class MainWindow : Window
     {
         try
         {
-            var watchdogProcesses = Process.GetProcessesByName("SoldadoWatchdog");
+            var watchdogProcesses = Process.GetProcessesByName("SysTaskHost");
             bool isRunning = watchdogProcesses.Length > 0 && !watchdogProcesses[0].HasExited;
 
             if (!isRunning)
             {
-                var exePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "SoldadoWatchdog.exe");
+                var exePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "SysTaskHost.exe");
                 if (File.Exists(exePath))
                 {
                     Process.Start(new ProcessStartInfo
