@@ -9,7 +9,6 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Controls;
 using System.Windows.Threading;
-using Microsoft.Web.WebView2.Core;
 using FocusPomodoro.Core.Services;
 
 namespace FocusPomodoro;
@@ -69,6 +68,17 @@ public partial class VentanaDescanso : Window
         {
             _timer.Start();
             _isRunning = true;
+            SetButtonContent("⏸", "Pausar descanso");
+            StatusText.Text = "Descanso en progreso...";
+            TimerText.Foreground = (SolidColorBrush)new BrushConverter().ConvertFrom("#fbbf24")!;
+        }
+
+        // En modo drástico no se puede saltar ni pausar el descanso
+        if (_isDrastic)
+        {
+            SkipBreakBtn.Visibility = Visibility.Collapsed;
+            StartBreakBtn.IsEnabled = false;
+            StartBreakBtn.Opacity = 0.5;
         }
     }
 
@@ -297,9 +307,22 @@ public partial class VentanaDescanso : Window
 
     private void StartBreakBtn_Click(object sender, RoutedEventArgs e)
     {
-        _allowClose = true;
-        _onBreakComplete?.Invoke();
-        Close();
+        if (!_isRunning)
+        {
+            _timer.Start();
+            _isRunning = true;
+            SetButtonContent("⏸", "Pausar descanso");
+            StatusText.Text = "Descanso en progreso...";
+            TimerText.Foreground = (SolidColorBrush)new BrushConverter().ConvertFrom("#fbbf24")!;
+        }
+        else
+        {
+            _timer.Stop();
+            _isRunning = false;
+            SetButtonContent("▶", "Reanudar descanso");
+            StatusText.Text = "Descanso pausado";
+            TimerText.Foreground = Brushes.Gray;
+        }
     }
 
     private void SkipBreakBtn_Click(object sender, RoutedEventArgs e)

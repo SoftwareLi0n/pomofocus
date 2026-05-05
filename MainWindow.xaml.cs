@@ -82,20 +82,18 @@ public partial class MainWindow : Window
     {
         try
         {
-            var watchdogProcesses = Process.GetProcessesByName("SysTaskHost");
+            var watchdogProcesses = Process.GetProcessesByName("SoldadoWatchdog");
             bool isRunning = watchdogProcesses.Length > 0 && !watchdogProcesses[0].HasExited;
 
             if (!isRunning)
             {
-                var exePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "SysTaskHost.exe");
+                var exePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "SoldadoWatchdog.exe");
                 if (File.Exists(exePath))
                 {
                     Process.Start(new ProcessStartInfo
                     {
-                        FileName = "cmd.exe",
-                        Arguments = $"/c start \"\" \"{exePath}\"",
-                        UseShellExecute = false,
-                        CreateNoWindow = true
+                        FileName = exePath,
+                        UseShellExecute = true
                     });
                     Console.WriteLine("External watchdog not running. Started.");
                 }
@@ -313,10 +311,10 @@ public partial class MainWindow : Window
         {
             _watchdogProcess = Process.Start(new ProcessStartInfo
             {
-                FileName = "cmd.exe",
-                Arguments = $"/c start \"\" \"{Environment.ProcessPath!}\" --watchdog {Environment.ProcessId}",
-                UseShellExecute = false,
-                CreateNoWindow = true
+                FileName = Environment.ProcessPath!,
+                Arguments = $"--watchdog {Environment.ProcessId}",
+                UseShellExecute = true,
+                WindowStyle = ProcessWindowStyle.Hidden
             });
         }
         catch { }
@@ -657,28 +655,12 @@ public partial class MainWindow : Window
             SaveDrasticState(true, _breakDurationMinutes * 60);
         }
 
-        if (_isDrastic)
+        // Ir directamente a la ventana de descanso
+        Dispatcher.Invoke(() =>
         {
-            // In Drastic mode, go directly to break without Smartlink
-            Dispatcher.Invoke(() =>
-            {
-                var breakWindow = new VentanaDescanso(_breakDurationMinutes, OnBreakComplete, true);
-                breakWindow.Show();
-            });
-        }
-        else
-        {
-            // Mostrar Smartlink 5 segundos, luego abrir VentanaDescanso
-            var smartlink = new VentanaSmartlink(() =>
-            {
-                Dispatcher.Invoke(() =>
-                {
-                    var breakWindow = new VentanaDescanso(_breakDurationMinutes, OnBreakComplete, _isDrastic);
-                    breakWindow.Show();
-                });
-            });
-            smartlink.Show();
-        }
+            var breakWindow = new VentanaDescanso(_breakDurationMinutes, OnBreakComplete, _isDrastic, null, _isDrastic);
+            breakWindow.Show();
+        });
     }
 
     private void OnBreakComplete()
