@@ -20,10 +20,13 @@ public partial class VentanaDescanso : Window
     private int _remainingSeconds;
     private bool _isRunning;
     private readonly Action? _onBreakComplete;
+    private readonly Action<int>? _onEmergencyGranted;
+    private DispatcherTimer? _emergencyPollTimer;
     private readonly bool _isDrastic;
     private readonly List<Window> _blockerWindows = new();
     private readonly bool _autoStart;
     private readonly ServicioEstadoDrastico _drasticStateService = new();
+    private readonly ServicioBloqueoVentana _bloqueo = new();
     private int _saveTickCounter;
     private bool _allowClose;
     
@@ -34,13 +37,14 @@ public partial class VentanaDescanso : Window
     private const double ArcCenterX = ArcCanvasSize / 2.0;
     private const double ArcCenterY = ArcCanvasSize / 2.0;
 
-    public VentanaDescanso(int breakDurationMinutes, Action? onBreakComplete = null, bool isDrastic = false, int? remainingSeconds = null, bool autoStart = false)
+    public VentanaDescanso(int breakDurationMinutes, Action? onBreakComplete = null, bool isDrastic = false, int? remainingSeconds = null, bool autoStart = false, Action<int>? onEmergencyGranted = null)
     {
         InitializeComponent();
 
         _breakDurationMinutes = breakDurationMinutes;
         _remainingSeconds = remainingSeconds ?? breakDurationMinutes * 60;
         _onBreakComplete = onBreakComplete;
+        _onEmergencyGranted = onEmergencyGranted;
         _isDrastic = isDrastic;
         _autoStart = autoStart;
 
@@ -52,7 +56,8 @@ public partial class VentanaDescanso : Window
 
         UpdateTimerDisplay();
 
-        HookKeyboard();
+        // Activar protección de bloqueo via servicio compartido
+        _bloqueo.Activar(this);
 
         if (_isDrastic)
         {
@@ -163,55 +168,6 @@ public partial class VentanaDescanso : Window
         var pathGeometry = new PathGeometry();
         pathGeometry.Figures.Add(figure);
         ProgressArc.Data = pathGeometry;
-        }
-
-        private void HookKeyboard()
-        {
-        _hookID = IntPtr.Zero;
-        _proc = HookCallback;
-        _hookID = SetWindowsHookEx(WH_KEYBOARD_LL, _proc, GetModuleHandle(Process.GetCurrentProcess().MainModule.ModuleName), 0);
-        if (_hookID == IntPtr.Zero)
-        {
-            int errorCode = Marshal.GetLastWin32Error();
-            Console.WriteLine($"SetWindowsHookEx failed. Error code: {errorCode}");
-        }
-    }
-
-    private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
-    {
-        if (nCode >= 0 && wParam == (IntPtr)WM_KEYDOWN)
-        {
-            int vkCode = Marshal.ReadInt32(lParam);
-            if (IsBlockedKey(vkCode))
-            {
-                return (IntPtr)1;
-            }
-        }
-        return CallNextHookEx(_hookID, nCode, wParam, lParam);
-    }
-
-        private bool IsBlockedKey(int vkCode)
-        {
-            // Block Alt+Tab, Win key, etc.
-            switch ((Keys)vkCode)
-            {
-                case Keys.LWin:
-                case Keys.RWin:
-                case Keys.Tab:
-                    return GetKeyState(VK_LWIN) < 0 || GetKeyState(VK_RWIN) < 0;
-                case Keys.Escape:
-                    return GetKeyState((int)Keys.Escape) < 0;
-            }
-            return false;
-        }
-
-    private void UnhookKeyboard()
-    {
-        if (_hookID != IntPtr.Zero)
-        {
-            UnhookWindowsHookEx(_hookID);
-            _hookID = IntPtr.Zero;
-        }
     }
 
     private void CompleteBreak()
@@ -228,6 +184,8 @@ public partial class VentanaDescanso : Window
         if (_isDrastic)
         {
             // Auto-complete in Drastic mode
+            _allowClose = true;
+            _bloqueo.PermitirCierre();
             _onBreakComplete?.Invoke();
             Close();
         }
@@ -239,6 +197,7 @@ public partial class VentanaDescanso : Window
             StartBreakBtn.Click += (s, e) =>
             {
                 _allowClose = true;
+                _bloqueo.PermitirCierre();
                 _onBreakComplete?.Invoke();
                 Close();
             };
@@ -258,50 +217,23 @@ public partial class VentanaDescanso : Window
         };
     }
 
-    #region Windows API
-
-    private delegate IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam);
-    private LowLevelKeyboardProc? _proc;
-    private IntPtr _hookID = IntPtr.Zero;
-
-    private const int WH_KEYBOARD_LL = 13;
-    private const int WM_KEYDOWN = 0x0100;
-    private static readonly int VK_LWIN = 0x5B;
-    private static readonly int VK_RWIN = 0x5C;
-
-    [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-    private static extern IntPtr SetWindowsHookEx(int idHook, LowLevelKeyboardProc lpfn, IntPtr hMod, uint dwThreadId);
-
-    [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool UnhookWindowsHookEx(IntPtr hhk);
-
-    [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-    private static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
-
-    [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-    private static extern IntPtr GetModuleHandle(string lpModuleName);
-
-    [DllImport("user32.dll")]
-    private static extern short GetKeyState(int vKey);
-
-    #endregion
-
-        #region Enums
-
-        private enum Keys
+    private void Window_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.K && Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Alt | ModifierKeys.Shift))
         {
-            LWin = 0x5B,
-            RWin = 0x5C,
-            Tab = 0x09,
-            Escape = 0x1B
+            // Backdoor para desarrolladores
+            _allowClose = true;
+            _bloqueo.PermitirCierre();
+            _drasticStateService.Clear();
+            MessageBox.Show("Modo Desarrollo: Bloqueo Drástico Desactivado", "Soldado", MessageBoxButton.OK, MessageBoxImage.Information);
+            Close();
         }
-
-        #endregion
+    }
 
     protected override void OnClosed(EventArgs e)
     {
-        UnhookKeyboard();
+        _emergencyPollTimer?.Stop();
+        _bloqueo.Dispose();
         base.OnClosed(e);
     }
 
@@ -328,7 +260,107 @@ public partial class VentanaDescanso : Window
     private void SkipBreakBtn_Click(object sender, RoutedEventArgs e)
     {
         _allowClose = true;
+        _bloqueo.PermitirCierre();
         _onBreakComplete?.Invoke();
         Close();
+    }
+
+    private void SettingsBtn_Click(object sender, RoutedEventArgs e)
+    {
+        var settingsService = new ServicioAjustes();
+        var currentOpacity = settingsService.Settings.Opacity;
+        
+        var settingsWindow = new VentanaAjustes(settingsService, (s) => {}, currentOpacity)
+        {
+            Owner = this,
+            Topmost = true
+        };
+        
+        _bloqueo.PauseFocusEnforcement = true;
+        settingsWindow.ShowDialog();
+        _bloqueo.PauseFocusEnforcement = false;
+    }
+
+    private void EmergencyBtn_Click(object sender, RoutedEventArgs e)
+    {
+        _bloqueo.PauseFocusEnforcement = true;
+        EmergencyOverlay.Visibility = Visibility.Visible;
+        EmergencyStatusTxt.Visibility = Visibility.Collapsed;
+        SendEmergencyBtn.IsEnabled = true;
+        EmergencyMotivoTxt.Focus();
+    }
+
+    private void CancelEmergencyBtn_Click(object sender, RoutedEventArgs e)
+    {
+        _emergencyPollTimer?.Stop();
+        EmergencyOverlay.Visibility = Visibility.Collapsed;
+        _bloqueo.PauseFocusEnforcement = false;
+    }
+
+    private async void SendEmergencyBtn_Click(object sender, RoutedEventArgs e)
+    {
+        var motivo = EmergencyMotivoTxt.Text?.Trim();
+        if (string.IsNullOrWhiteSpace(motivo))
+        {
+            EmergencyStatusTxt.Text = "Por favor ingresa un motivo para la emergencia.";
+            EmergencyStatusTxt.Foreground = Brushes.OrangeRed;
+            EmergencyStatusTxt.Visibility = Visibility.Visible;
+            return;
+        }
+
+        int requestedMinutes = 15;
+        if (EmergencyMinutesCombo.SelectedItem is ComboBoxItem selectedItem && int.TryParse(selectedItem.Tag?.ToString(), out int mins))
+        {
+            requestedMinutes = mins;
+        }
+
+        SendEmergencyBtn.IsEnabled = false;
+        EmergencyStatusTxt.Text = "Enviando solicitud y esperando al supervisor...";
+        EmergencyStatusTxt.Foreground = (SolidColorBrush)new BrushConverter().ConvertFrom("#fbbf24")!;
+        EmergencyStatusTxt.Visibility = Visibility.Visible;
+
+        bool sent = await SupervisionService.Instance.RequestEmergencyAsync(motivo, requestedMinutes);
+        if (!sent)
+        {
+            EmergencyStatusTxt.Text = "No se pudo contactar al servidor. Verifica la conexión.";
+            EmergencyStatusTxt.Foreground = Brushes.OrangeRed;
+            SendEmergencyBtn.IsEnabled = true;
+            return;
+        }
+
+        _emergencyPollTimer?.Stop();
+        _emergencyPollTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromSeconds(3)
+        };
+        _emergencyPollTimer.Tick += async (s, args) =>
+        {
+            var status = await SupervisionService.Instance.CheckEmergencyStatusAsync();
+            if (status != null)
+            {
+                if (status.Estado.Equals("aprobado", StringComparison.OrdinalIgnoreCase))
+                {
+                    _emergencyPollTimer.Stop();
+                    int grantedMinutes = status.MinutosAprobados ?? requestedMinutes;
+                    EmergencyStatusTxt.Text = $"¡Solicitud Aprobada! Se concedieron {grantedMinutes} minutos.";
+                    EmergencyStatusTxt.Foreground = Brushes.LightGreen;
+
+                    await Task.Delay(1500);
+
+                    _allowClose = true;
+                    _bloqueo.PermitirCierre();
+                    _onEmergencyGranted?.Invoke(grantedMinutes);
+                    Close();
+                }
+                else if (status.Estado.Equals("rechazado", StringComparison.OrdinalIgnoreCase))
+                {
+                    _emergencyPollTimer.Stop();
+                    EmergencyStatusTxt.Text = "Solicitud rechazada por el supervisor.";
+                    EmergencyStatusTxt.Foreground = Brushes.OrangeRed;
+                    SendEmergencyBtn.IsEnabled = true;
+                }
+            }
+        };
+        _emergencyPollTimer.Start();
     }
 }

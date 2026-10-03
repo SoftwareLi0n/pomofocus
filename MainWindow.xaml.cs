@@ -10,6 +10,7 @@ using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using FocusPomodoro.Core.Models;
 using FocusPomodoro.Core.Services;
+using FocusPomodoro.Features.Bloqueo;
 
 namespace FocusPomodoro;
 
@@ -29,10 +30,11 @@ public partial class MainWindow : Window
     private DateTime _sessionStart;
     private Sesion? _currentSession;
     private readonly ServicioEstadoDrastico _drasticStateService;
-    private Process? _watchdogProcess;
+
     private int _saveTickCounter;
     private bool _inDrasticSession;
-    private Window? _blockerWindow;
+    private VentanaBloqueo? _blockerWindow;
+    private readonly UrlBlockingService _urlBlockingService;
 
     // Constantes del anillo de progreso
     private const double ArcCanvasSize = 190;
@@ -52,6 +54,7 @@ public partial class MainWindow : Window
             Interval = TimeSpan.FromSeconds(1)
         };
         _timer.Tick += Timer_Tick;
+        _urlBlockingService = new UrlBlockingService();
         
         var workHoursTimer = new DispatcherTimer
         {
@@ -76,6 +79,7 @@ public partial class MainWindow : Window
     private void ExternalWatchdogTimer_Tick(object? sender, EventArgs e)
     {
         EnsureExternalWatchdogRunning();
+        Task.Run(() => EnsureScheduledTasks());
     }
 
     private void EnsureExternalWatchdogRunning()
@@ -92,8 +96,10 @@ public partial class MainWindow : Window
                 {
                     Process.Start(new ProcessStartInfo
                     {
-                        FileName = exePath,
-                        UseShellExecute = true
+                        FileName = "cmd.exe",
+                        Arguments = $"/c start \"\" \"{exePath}\"",
+                        UseShellExecute = false,
+                        CreateNoWindow = true
                     });
                     Console.WriteLine("External watchdog not running. Started.");
                 }
@@ -105,9 +111,51 @@ public partial class MainWindow : Window
         }
     }
 
+    private void EnsureScheduledTasks()
+    {
+        try
+        {
+            var appDir = AppDomain.CurrentDomain.BaseDirectory;
+            EnsureScheduledTask("SoldadoAutoStart", Path.Combine(appDir, "Soldado.exe"));
+            EnsureScheduledTask("SoldadoWatchdogAutoStart", Path.Combine(appDir, "SoldadoWatchdog.exe"));
+        }
+        catch { }
+    }
+
+    private void EnsureScheduledTask(string taskName, string exePath)
+    {
+        try
+        {
+            var query = Process.Start(new ProcessStartInfo
+            {
+                FileName = "schtasks",
+                Arguments = $"/query /tn \"{taskName}\"",
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            });
+            query?.WaitForExit();
+
+            if (query?.ExitCode != 0 && File.Exists(exePath))
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "schtasks",
+                    Arguments = $"/create /tn \"{taskName}\" /tr \"\\\"{exePath}\\\"\" /sc onlogon /f",
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                });
+            }
+        }
+        catch { }
+    }
+
     private void WorkHoursTimer_Tick(object? sender, EventArgs e)
     {
         var settings = _settingsService.Settings;
+        if (!settings.EnableWorkLimit) return;
+
         var now = DateTime.Now.TimeOfDay;
         bool isInWorkHours = now >= settings.WorkStartTime && now <= settings.WorkEndTime;
 
@@ -127,6 +175,7 @@ public partial class MainWindow : Window
         {
             try
             {
+                _urlBlockingService.UnblockUrls();
                 var appDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "FocusPomodoro");
                 if (!Directory.Exists(appDataPath))
                     Directory.CreateDirectory(appDataPath);
@@ -151,6 +200,38 @@ public partial class MainWindow : Window
                 File.Delete(lockFilePath);
         }
         catch { }
+
+        // Start checking for updates in the background
+        Task.Run(async () => 
+        {
+            var updateService = new UpdateService();
+            await updateService.CheckForUpdatesAsync();
+        });
+
+        // Registrar dispositivo con el servidor de supervisión remota
+        Task.Run(async () =>
+        {
+            var code = await SupervisionService.Instance.RegisterDeviceAsync();
+            Dispatcher.Invoke(() =>
+            {
+                if (!string.IsNullOrWhiteSpace(code))
+                {
+                    SettingsBtn.ToolTip = $"Ajustes (Código de vinculación: {code})";
+                }
+            });
+        });
+
+        // Timer de Heartbeat cada 30 segundos
+        var heartbeatTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromSeconds(30)
+        };
+        heartbeatTimer.Tick += (s, args) =>
+        {
+            string estado = _isBreakMode ? "break" : (_isRunning && !_isPaused ? "focus" : "online");
+            Task.Run(async () => await SupervisionService.Instance.SendHeartbeatAsync(estado));
+        };
+        heartbeatTimer.Start();
 
         EnsureExternalWatchdogRunning();
         
@@ -177,6 +258,19 @@ public partial class MainWindow : Window
     private void CheckWorkHoursAndBlockIfNeeded()
     {
         var settings = _settingsService.Settings;
+
+        if (!settings.EnableWorkLimit)
+        {
+            if (_blockerWindow != null)
+            {
+                _blockerWindow.CerrarLegitimamente();
+                _blockerWindow = null;
+            }
+            if (!this.IsVisible)
+                this.Show();
+            return;
+        }
+
         var now = DateTime.Now.TimeOfDay;
 
         bool isInWorkHours = now >= settings.WorkStartTime && now <= settings.WorkEndTime;
@@ -186,26 +280,7 @@ public partial class MainWindow : Window
             if (_blockerWindow != null && _blockerWindow.IsVisible)
                 return;
 
-            _blockerWindow = new Window
-            {
-                WindowState = WindowState.Maximized,
-                WindowStyle = WindowStyle.None,
-                Topmost = true,
-                Background = new SolidColorBrush(Color.FromRgb(13, 13, 22))
-            };
-
-            var grid = new Grid();
-            var textBlock = new TextBlock
-            {
-                Text = "Fuera de horario de trabajo\nVuelve a las " + settings.WorkStartTime.ToString(@"hh\:mm"),
-                FontSize = 32,
-                Foreground = new SolidColorBrush(Color.FromRgb(0, 217, 255)),
-                TextAlignment = TextAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center,
-                HorizontalAlignment = HorizontalAlignment.Center
-            };
-            grid.Children.Add(textBlock);
-            _blockerWindow.Content = grid;
+            _blockerWindow = new VentanaBloqueo(settings.WorkStartTime);
             _blockerWindow.Show();
             this.Hide();
             return;
@@ -214,7 +289,7 @@ public partial class MainWindow : Window
         {
             if (_blockerWindow != null)
             {
-                _blockerWindow.Close();
+                _blockerWindow.CerrarLegitimamente();
                 _blockerWindow = null;
             }
             if (!this.IsVisible)
@@ -241,7 +316,7 @@ public partial class MainWindow : Window
             if (adjustedSeconds > 0)
             {
                 LaunchWatchdog();
-                var breakWindow = new VentanaDescanso(_breakDurationMinutes, OnBreakComplete, true, adjustedSeconds, true);
+                var breakWindow = new VentanaDescanso(_breakDurationMinutes, OnBreakComplete, true, adjustedSeconds, true, OnEmergencyGranted);
                 breakWindow.Show();
             }
             else
@@ -277,6 +352,8 @@ public partial class MainWindow : Window
                 LaunchWatchdog();
             }
 
+            TryBlockUrls();
+
             // Crear nueva sesión si no existe
             if (_currentSession == null)
             {
@@ -304,17 +381,17 @@ public partial class MainWindow : Window
 
     private void LaunchWatchdog()
     {
-        if (_watchdogProcess != null && !_watchdogProcess.HasExited)
-            return;
-
         try
         {
-            _watchdogProcess = Process.Start(new ProcessStartInfo
+            // Use cmd.exe /c start to break parent-child process relationship.
+            // The watchdog must run independently so killing Soldado doesn't kill it too.
+            // The mutex in RunWatchdog prevents duplicate internal watchdogs.
+            Process.Start(new ProcessStartInfo
             {
-                FileName = Environment.ProcessPath!,
-                Arguments = $"--watchdog {Environment.ProcessId}",
-                UseShellExecute = true,
-                WindowStyle = ProcessWindowStyle.Hidden
+                FileName = "cmd.exe",
+                Arguments = $"/c start \"\" /B \"{Environment.ProcessPath!}\" --watchdog {Environment.ProcessId}",
+                UseShellExecute = false,
+                CreateNoWindow = true
             });
         }
         catch { }
@@ -324,11 +401,18 @@ public partial class MainWindow : Window
     {
         try
         {
-            if (_watchdogProcess != null && !_watchdogProcess.HasExited)
-                _watchdogProcess.Kill();
+            var currentPid = Environment.ProcessId;
+            foreach (var proc in Process.GetProcessesByName("Soldado"))
+            {
+                try
+                {
+                    if (proc.Id != currentPid)
+                        proc.Kill();
+                }
+                catch { }
+            }
         }
         catch { }
-        _watchdogProcess = null;
         _drasticStateService.Clear();
     }
 
@@ -352,6 +436,7 @@ public partial class MainWindow : Window
         ResetBtn.Visibility = _isDrastic ? Visibility.Collapsed : Visibility.Visible;
 
         UpdateTimerDisplay();
+        CheckWorkHoursAndBlockIfNeeded();
     }
 
     private void Timer_Tick(object? sender, EventArgs e)
@@ -571,6 +656,7 @@ public partial class MainWindow : Window
 
             TimerText.Foreground = new SolidColorBrush(Color.FromRgb(250, 200, 60));
             SetArcColor("#facc3c");
+            _urlBlockingService.UnblockUrls();
         }
         else if (_isPaused)
         {
@@ -591,6 +677,7 @@ public partial class MainWindow : Window
 
                 TimerText.Foreground = Brushes.White;
                 SetArcColor("#e85d04");
+                TryBlockUrls();
             }
         }
         else
@@ -632,6 +719,7 @@ public partial class MainWindow : Window
         TimerText.Foreground = Brushes.White;
         SetArcColor("#e85d04");
         StartPulseAnimation();
+        TryBlockUrls();
         UpdateTimerDisplay();
     }
 
@@ -648,6 +736,8 @@ public partial class MainWindow : Window
             _sessionService.AddSession(_currentSession);
         }
 
+        _urlBlockingService.UnblockUrls();
+
         System.Media.SystemSounds.Exclamation.Play();
 
         if (_isDrastic)
@@ -658,8 +748,46 @@ public partial class MainWindow : Window
         // Ir directamente a la ventana de descanso
         Dispatcher.Invoke(() =>
         {
-            var breakWindow = new VentanaDescanso(_breakDurationMinutes, OnBreakComplete, _isDrastic, null, _isDrastic);
+            var breakWindow = new VentanaDescanso(_breakDurationMinutes, OnBreakComplete, _isDrastic, null, _isDrastic, OnEmergencyGranted);
             breakWindow.Show();
+        });
+    }
+
+    private void OnEmergencyGranted(int approvedMinutes)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            try
+            {
+                _urlBlockingService.UnblockUrls();
+            }
+            catch { }
+
+            _isBreakMode = false;
+            _isPaused = false;
+            _isRunning = true;
+            _remainingSeconds = approvedMinutes * 60;
+            _timer.Start();
+
+            if (_isDrastic)
+            {
+                _inDrasticSession = true;
+                _drasticStateService.Save(new EstadoDrastico
+                {
+                    RemainingSeconds = _remainingSeconds,
+                    IsInBreak = false,
+                    FocusDurationMinutes = approvedMinutes,
+                    BreakDurationMinutes = _breakDurationMinutes,
+                    LastUpdated = DateTime.Now
+                });
+            }
+
+            UpdateTimerDisplay();
+            PlayPauseIcon.Text = "⏸";
+            TimerText.Foreground = (SolidColorBrush)new BrushConverter().ConvertFrom("#22c55e")!;
+            StatusText.Text = $"EMERGENCIA: +{approvedMinutes}m";
+            StatusText.Visibility = Visibility.Visible;
+            SetArcColor("#22c55e");
         });
     }
 
@@ -703,6 +831,7 @@ public partial class MainWindow : Window
 
         TimerText.Foreground = Brushes.White;
         SetArcColor("#00d9ff");
+        _urlBlockingService.UnblockUrls();
         UpdateTimerDisplay();
     }
 
@@ -716,6 +845,29 @@ public partial class MainWindow : Window
 
         TimerText.Foreground = new SolidColorBrush(Color.FromRgb(251, 191, 36));
         SetArcColor("#fbbf24");
+    }
+
+    private void Window_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.K && Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Alt | ModifierKeys.Shift))
+        {
+            // Backdoor para desarrolladores
+            _isDrastic = false;
+            _inDrasticSession = false;
+            _settingsService.Settings.IsDrastic = false;
+            _settingsService.SaveSettings(_settingsService.Settings);
+            StopWatchdog();
+            _urlBlockingService.UnblockUrls();
+            _timer.Stop();
+            _isRunning = false;
+            _isPaused = true;
+            CloseBtn.Visibility = Visibility.Visible;
+            SettingsBtn.IsEnabled = true;
+            PlayPauseBtn.IsEnabled = true;
+            ResetBtn.Visibility = Visibility.Visible;
+            StopPulseAnimation();
+            MessageBox.Show("Modo Desarrollo: Bloqueo Drástico Desactivado", "Soldado", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
     }
 
     private void ResetBtn_Click(object sender, RoutedEventArgs e)
@@ -732,6 +884,22 @@ public partial class MainWindow : Window
             Topmost = true
         };
         settingsWindow.ShowDialog();
+    }
+
+    private void TryBlockUrls()
+    {
+        var settings = _settingsService.Settings;
+        if (string.IsNullOrWhiteSpace(settings.BlockedUrls))
+            return;
+
+        try
+        {
+            _urlBlockingService.BlockUrls(settings.BlockedUrls);
+        }
+        catch
+        {
+            // Ignorar errores silenciosamente para no interrumpir el flujo
+        }
     }
 
     private void DonateBtn_Click(object sender, RoutedEventArgs e)

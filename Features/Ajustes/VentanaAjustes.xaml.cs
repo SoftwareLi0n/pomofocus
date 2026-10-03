@@ -34,6 +34,9 @@ public partial class VentanaAjustes : Window
         BreakMinutesTextBox.Text = settings.BreakMinutes.ToString();
         OpacitySlider.Value = settings.Opacity;
         UpdateOpacityLabel(settings.Opacity);
+        BlockedUrlsTextBox.Text = settings.BlockedUrls;
+        EnableWorkLimitCheckBox.IsChecked = settings.EnableWorkLimit;
+        WorkHoursGrid.IsEnabled = settings.EnableWorkLimit;
 
         LoadWorkHoursComboBoxes();
         SelectWorkHours(settings);
@@ -51,6 +54,9 @@ public partial class VentanaAjustes : Window
 
         ModerateRadio.Checked += (s, e) => LevelDescription.Text = "Permite pausar, resetear y saltar descanso";
         DrasticRadio.Checked += (s, e) => LevelDescription.Text = "Sin pausa, sin reset, sin saltar descanso";
+
+        var code = SupervisionService.Instance.LinkCode;
+        LinkCodeTextBox.Text = string.IsNullOrWhiteSpace(code) ? "No registrado aún" : code;
     }
 
     private void LoadWorkHoursComboBoxes()
@@ -136,8 +142,8 @@ public partial class VentanaAjustes : Window
             return;
         }
 
-        var startParts = StartHourCombo.SelectedItem.ToString().Split(':');
-        var endParts = EndHourCombo.SelectedItem.ToString().Split(':');
+        var startParts = StartHourCombo.SelectedItem?.ToString()?.Split(':') ?? new[] { "07", "00" };
+        var endParts = EndHourCombo.SelectedItem?.ToString()?.Split(':') ?? new[] { "18", "30" };
 
         var settings = new AjustesApp
         {
@@ -145,13 +151,23 @@ public partial class VentanaAjustes : Window
             BreakMinutes = breakMinutes,
             Opacity = OpacitySlider.Value,
             IsDrastic = DrasticRadio.IsChecked == true,
+            EnableWorkLimit = EnableWorkLimitCheckBox.IsChecked == true,
             WorkStartTime = new TimeSpan(int.Parse(startParts[0]), int.Parse(startParts[1]), 0),
-            WorkEndTime = new TimeSpan(int.Parse(endParts[0]), int.Parse(endParts[1]), 0)
+            WorkEndTime = new TimeSpan(int.Parse(endParts[0]), int.Parse(endParts[1]), 0),
+            BlockedUrls = BlockedUrlsTextBox.Text
         };
 
         _settingsService.SaveSettings(settings);
         _onSettingsSaved(settings);
         Close();
+    }
+
+    private void EnableWorkLimitCheckBox_CheckedChanged(object sender, RoutedEventArgs e)
+    {
+        if (WorkHoursGrid != null)
+        {
+            WorkHoursGrid.IsEnabled = EnableWorkLimitCheckBox.IsChecked == true;
+        }
     }
 
     private void CloseBtn_Click(object sender, RoutedEventArgs e)

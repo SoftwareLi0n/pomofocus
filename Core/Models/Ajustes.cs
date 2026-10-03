@@ -6,6 +6,8 @@ public class AjustesApp
     public int BreakMinutes { get; set; } = 10;
     public double Opacity { get; set; } = 0.75;
     public bool IsDrastic { get; set; } = false;
+    public bool EnableWorkLimit { get; set; } = true;
     public TimeSpan WorkStartTime { get; set; } = new TimeSpan(7, 0, 0);
     public TimeSpan WorkEndTime { get; set; } = new TimeSpan(18, 30, 0);
+    public string BlockedUrls { get; set; } = "";
 }

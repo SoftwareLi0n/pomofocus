@@ -1,12 +1,17 @@
 using FocusPomodoro.Core.Services;
+using System;
 using System.Diagnostics;
-using System.Windows;
+using System.IO;
+using System.Linq;
 using System.Threading;
+using System.Windows;
 
 namespace FocusPomodoro;
 
 public partial class App : Application
 {
+    private Mutex? _instanceMutex;
+
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
@@ -27,8 +32,25 @@ public partial class App : Application
             return;
         }
 
-        var mainWindow = new MainWindow();
-        mainWindow.Show();
+        // Single instance check for the main app
+        _instanceMutex = new Mutex(true, "FocusPomodoro_Soldado_SingleInstance", out bool createdNew);
+        if (!createdNew)
+        {
+            // Another instance is already running
+            Shutdown();
+            return;
+        }
+
+        try
+        {
+            var mainWindow = new MainWindow();
+            mainWindow.Show();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Error during startup: {ex.Message}\n\nStacktrace:\n{ex.StackTrace}", "Startup Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            Shutdown();
+        }
     }
 
     private void App_SessionEnding(object sender, SessionEndingCancelEventArgs e)
