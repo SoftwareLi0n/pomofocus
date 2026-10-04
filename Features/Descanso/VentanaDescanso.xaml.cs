@@ -85,6 +85,34 @@ public partial class VentanaDescanso : Window
             StartBreakBtn.IsEnabled = false;
             StartBreakBtn.Opacity = 0.5;
         }
+        
+        StartPollingForGrantedTime();
+    }
+
+    private void StartPollingForGrantedTime()
+    {
+        _emergencyPollTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromSeconds(5)
+        };
+        _emergencyPollTimer.Tick += async (s, args) =>
+        {
+            var status = await SupervisionService.Instance.CheckEmergencyStatusAsync();
+            if (status != null && status.Estado.Equals("aprobado", StringComparison.OrdinalIgnoreCase))
+            {
+                _emergencyPollTimer.Stop();
+                int grantedMinutes = status.MinutosAprobados ?? 15;
+                StatusText.Text = $"¡Tiempo extra concedido! ({grantedMinutes} minutos)";
+                StatusText.Foreground = Brushes.LightGreen;
+                await Task.Delay(2000);
+                
+                _allowClose = true;
+                _bloqueo.PermitirCierre();
+                _onEmergencyGranted?.Invoke(grantedMinutes);
+                Close();
+            }
+        };
+        _emergencyPollTimer.Start();
     }
 
     private void Timer_Tick(object? sender, EventArgs e)
@@ -281,86 +309,5 @@ public partial class VentanaDescanso : Window
         _bloqueo.PauseFocusEnforcement = false;
     }
 
-    private void EmergencyBtn_Click(object sender, RoutedEventArgs e)
-    {
-        _bloqueo.PauseFocusEnforcement = true;
-        EmergencyOverlay.Visibility = Visibility.Visible;
-        EmergencyStatusTxt.Visibility = Visibility.Collapsed;
-        SendEmergencyBtn.IsEnabled = true;
-        EmergencyMotivoTxt.Focus();
-    }
 
-    private void CancelEmergencyBtn_Click(object sender, RoutedEventArgs e)
-    {
-        _emergencyPollTimer?.Stop();
-        EmergencyOverlay.Visibility = Visibility.Collapsed;
-        _bloqueo.PauseFocusEnforcement = false;
-    }
-
-    private async void SendEmergencyBtn_Click(object sender, RoutedEventArgs e)
-    {
-        var motivo = EmergencyMotivoTxt.Text?.Trim();
-        if (string.IsNullOrWhiteSpace(motivo))
-        {
-            EmergencyStatusTxt.Text = "Por favor ingresa un motivo para la emergencia.";
-            EmergencyStatusTxt.Foreground = Brushes.OrangeRed;
-            EmergencyStatusTxt.Visibility = Visibility.Visible;
-            return;
-        }
-
-        int requestedMinutes = 15;
-        if (EmergencyMinutesCombo.SelectedItem is ComboBoxItem selectedItem && int.TryParse(selectedItem.Tag?.ToString(), out int mins))
-        {
-            requestedMinutes = mins;
-        }
-
-        SendEmergencyBtn.IsEnabled = false;
-        EmergencyStatusTxt.Text = "Enviando solicitud y esperando al supervisor...";
-        EmergencyStatusTxt.Foreground = (SolidColorBrush)new BrushConverter().ConvertFrom("#fbbf24")!;
-        EmergencyStatusTxt.Visibility = Visibility.Visible;
-
-        bool sent = await SupervisionService.Instance.RequestEmergencyAsync(motivo, requestedMinutes);
-        if (!sent)
-        {
-            EmergencyStatusTxt.Text = "No se pudo contactar al servidor. Verifica la conexión.";
-            EmergencyStatusTxt.Foreground = Brushes.OrangeRed;
-            SendEmergencyBtn.IsEnabled = true;
-            return;
-        }
-
-        _emergencyPollTimer?.Stop();
-        _emergencyPollTimer = new DispatcherTimer
-        {
-            Interval = TimeSpan.FromSeconds(3)
-        };
-        _emergencyPollTimer.Tick += async (s, args) =>
-        {
-            var status = await SupervisionService.Instance.CheckEmergencyStatusAsync();
-            if (status != null)
-            {
-                if (status.Estado.Equals("aprobado", StringComparison.OrdinalIgnoreCase))
-                {
-                    _emergencyPollTimer.Stop();
-                    int grantedMinutes = status.MinutosAprobados ?? requestedMinutes;
-                    EmergencyStatusTxt.Text = $"¡Solicitud Aprobada! Se concedieron {grantedMinutes} minutos.";
-                    EmergencyStatusTxt.Foreground = Brushes.LightGreen;
-
-                    await Task.Delay(1500);
-
-                    _allowClose = true;
-                    _bloqueo.PermitirCierre();
-                    _onEmergencyGranted?.Invoke(grantedMinutes);
-                    Close();
-                }
-                else if (status.Estado.Equals("rechazado", StringComparison.OrdinalIgnoreCase))
-                {
-                    _emergencyPollTimer.Stop();
-                    EmergencyStatusTxt.Text = "Solicitud rechazada por el supervisor.";
-                    EmergencyStatusTxt.Foreground = Brushes.OrangeRed;
-                    SendEmergencyBtn.IsEnabled = true;
-                }
-            }
-        };
-        _emergencyPollTimer.Start();
-    }
 }
